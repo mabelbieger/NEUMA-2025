@@ -5,8 +5,8 @@ export default function Login() {
     email: '',
     senha: ''
   });
-
   const [isLoading, setIsLoading] = useState(false);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -20,6 +20,13 @@ export default function Login() {
     setIsLoading(true);
     
     try {
+      // Debug - mostrar dados que estão sendo enviados
+      console.log('=== DEBUG LOGIN ===');
+      console.log('Email:', formData.email);
+      console.log('Senha:', formData.senha);
+      console.log('Tamanho da senha:', formData.senha.length);
+      console.log('Dados completos:', formData);
+      
       const response = await fetch('http://localhost:3001/api/login', {
         method: 'POST',
         headers: {
@@ -28,11 +35,21 @@ export default function Login() {
         body: JSON.stringify(formData)
       });
       
+      console.log('Status da resposta:', response.status);
       const result = await response.json();
+      console.log('Resposta completa do servidor:', result);
       
       if (result.success) {
+        // Salvar dados do usuário no sessionStorage
+        if (result.user) {
+          sessionStorage.setItem('loggedUser', JSON.stringify(result.user));
+        }
+        
         alert('Login realizado com sucesso!');
+        // Redirecionar para a página home
+        window.location.href = '/home';
       } else {
+        console.error('Erro de login:', result.message);
         alert(`Erro: ${result.message}`);
       }
     } catch (error) {
@@ -85,7 +102,6 @@ export default function Login() {
           }}>
             Bem-vindo(a) novamente!
           </h1>
-
           {/* Logo Neuma */}
           <div style={{
             position: 'relative',
@@ -95,14 +111,14 @@ export default function Login() {
             marginBottom: '20px'
           }}>
             {/* Logo */}
-            <img 
-              src="/imagens/logo.png" 
-              alt="Logo Neuma" 
+            <img
+              src="/imagens/logo.png"
+              alt="Logo Neuma"
               style={{
                 width: 'clamp(100px, 15vw, 140px)',
                 height: 'auto',
                 zIndex: 2
-              }} 
+              }}
             />
           </div>
         </div>
@@ -131,20 +147,21 @@ export default function Login() {
             }}>
               Login
             </h2>
-            <img 
-              src="/imagens/mascote.png" 
-              alt="Mascote" 
+            <img
+              src="/imagens/mascote.png"
+              alt="Mascote"
               style={{
                 height: 'clamp(30px, 5vw, 40px)',
                 width: 'auto'
-              }} 
+              }}
             />
           </div>
 
-          <div onSubmit={handleSubmit} style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: '20px' 
+          {/* CORREÇÃO: Mudança de div para form */}
+          <form onSubmit={handleSubmit} style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px'
           }}>
             <input
               type="email"
@@ -167,7 +184,7 @@ export default function Login() {
               onFocus={(e) => e.target.style.borderColor = '#9B7EFF'}
               onBlur={(e) => e.target.style.borderColor = '#CED0FF'}
             />
-
+            
             <input
               type="password"
               name="senha"
@@ -189,9 +206,10 @@ export default function Login() {
               onFocus={(e) => e.target.style.borderColor = '#9B7EFF'}
               onBlur={(e) => e.target.style.borderColor = '#CED0FF'}
             />
-
+            
+            {/* CORREÇÃO: Mudança de onClick para type="submit" */}
             <button
-              onClick={handleSubmit}
+              type="submit"
               disabled={isLoading}
               style={{
                 backgroundColor: isLoading ? '#cccccc' : '#CED0FF',
@@ -210,26 +228,29 @@ export default function Login() {
             >
               {isLoading ? 'Fazendo login...' : 'Fazer login'}
             </button>
-
-            <p style={{ 
-              textAlign: 'center', 
-              fontSize: '12px', 
+            
+            <p style={{
+              textAlign: 'center',
+              fontSize: '12px',
               color: '#666',
               marginTop: '15px',
               lineHeight: '1.4'
             }}>
-              Não possui uma conta? 
-              <span onClick={() => console.log('Navigate to cadastro')} style={{ 
-                color: '#1B1464', 
-                textDecoration: 'none',
-                fontWeight: '500',
-                marginLeft: '5px',
-                cursor: 'pointer'
-              }}>
+              Não possui uma conta?
+              <span 
+                onClick={() => window.location.href = '/cadastro'}
+                style={{
+                  color: '#1B1464',
+                  textDecoration: 'none',
+                  fontWeight: '500',
+                  marginLeft: '5px',
+                  cursor: 'pointer'
+                }}
+              >
                 Cadastre-se
               </span>
             </p>
-          </div>
+          </form>
         </div>
       </div>
 
@@ -241,14 +262,12 @@ export default function Login() {
               flex: 1 1 100% !important;
               min-width: unset !important;
             }
-            
             div[style*="maxWidth: '800px'"] {
               flex-direction: column !important;
               height: auto !important;
               max-width: 400px !important;
             }
           }
-          
           @media (max-width: 480px) {
             div[style*="padding: '20px'"] {
               padding: 10px !important;
