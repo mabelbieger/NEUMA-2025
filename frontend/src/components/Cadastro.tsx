@@ -125,6 +125,7 @@ export default function Cadastro() {
                 fontSize: '16px',
                 backgroundColor: 'white',
                 outline: 'none',
+                color: '#000',
                 transition: 'border-color 0.2s'
               }}
             />
@@ -143,6 +144,7 @@ export default function Cadastro() {
                 fontSize: '16px',
                 backgroundColor: 'white',
                 outline: 'none',
+                color: '#000',
                 transition: 'border-color 0.2s'
               }}
             />
@@ -162,6 +164,7 @@ export default function Cadastro() {
                 fontSize: '16px',
                 backgroundColor: 'white',
                 outline: 'none',
+                color: '#000',
                 transition: 'border-color 0.2s'
               }}
             />
