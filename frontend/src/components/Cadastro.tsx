@@ -16,10 +16,36 @@ export default function Cadastro() {
     }));
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    console.log('Dados do formulário:', formData);
-    alert(`Cadastro realizado!\nNome: ${formData.nomeCompleto}\nEmail: ${formData.email}\nTipo: ${formData.tipo}`);
+    
+    try {
+      const response = await fetch('http://localhost:3001/api/cadastro', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        alert('Cadastro realizado com sucesso!');
+        // Limpar formulário após sucesso
+        setFormData({
+          nomeCompleto: '',
+          email: '',
+          senha: '',
+          tipo: ''
+        });
+      } else {
+        alert(`Erro: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Erro ao cadastrar:', error);
+      alert('Erro ao conectar com o servidor');
+    }
   };
 
   return (
