@@ -1,107 +1,143 @@
-import express from 'express';
-import mysql from 'mysql2/promise';
-import cors from 'cors';
-import bcrypt from 'bcryptjs';
-import dotenv from 'dotenv';
-
-dotenv.config();
+const express = require('express');
+const mysql = require('mysql2');
+const cors = require('cors');
+const bcrypt = require('bcrypt');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const port = 3001;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Configuração do banco de dados
-const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'infocimol17'
-};
+const db = mysql.createConnection({
+  host: 'mysql.infocimol.com.br',
+  user: 'infocimol17', 
+  password: 'N1e2u3m4a5', 
+  database: 'infocimol17'
+});
 
-// Função para conectar ao banco
-async function getConnection() {
-  try {
-    const connection = await mysql.createConnection(dbConfig);
-    return connection;
-  } catch (error) {
-    console.error('Erro ao conectar com o banco:', error);
-    throw error;
+db.connect((err) => {
+  if (err) {
+    console.error('Erro ao conectar ao banco de dados:', err);
+  } else {
+    console.log('Conectado ao MySQL');
   }
-}
+});
 
-// Rota para cadastro de usuário
 app.post('/api/cadastro', async (req, res) => {
-  const { nomeCompleto, email, senha, tipo } = req.body;
-  
   try {
-    const connection = await getConnection();
-    
-    // Verificar se o email já existe
-    const [existingUser] = await connection.execute(
-      'SELECT id_usuario FROM Usuario WHERE email = ?',
-      [email]
-    );
-    
-    if (existingUser.length > 0) {
-      await connection.end();
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Email já cadastrado!' 
-      });
+    const { nomeCompleto, email, senha, tipo } = req.body;
+
+    if (!nomeCompleto || !email || !senha || !tipo) {
+      return res.json({ success: false, message: 'Todos os campos são obrigatórios' });
     }
-    
-    // Criptografar a senha
-    const senhaHash = await bcrypt.hash(senha, 10);
-    
-    // Converter tipo para o formato do banco
-    const tipoUsuario = tipo === 'estudante' ? 'Aluno' : 'Professor';
-    
-    // Inserir usuário
-    const [result] = await connection.execute(
-      'INSERT INTO Usuario (nome, email, senha, tipo_usuario) VALUES (?, ?, ?, ?)',
-      [nomeCompleto, email, senhaHash, tipoUsuario]
-    );
-    
-    const userId = result.insertId;
-    
-    // Inserir na tabela específica (Professor ou Aluno)
-    if (tipoUsuario === 'Professor') {
-      await connection.execute(
-        'INSERT INTO Professor (id_usuario) VALUES (?)',
-        [userId]
-      );
-    } else {
-      await connection.execute(
-        'INSERT INTO Aluno (id_usuario) VALUES (?)',
-        [userId]
-      );
-    }
-    
-    await connection.end();
-    
-    res.json({ 
-      success: true, 
-      message: 'Usuário cadastrado com sucesso!',
-      userId: userId
+
+    const checkEmailQuery = 'SELECT email FROM Usuario WHERE email = ?';
+    db.query(checkEmailQuery, [email], async (err, results) => {
+      if (err) {
+        console.error('Erro ao verificar email:', err);
+        return res.json({ success: false, message: 'Erro interno do servidor' });
+      }
+
+      if (results.length > 0) {
+        return res.json({ success: false, message: 'Email já cadastrado' });
+      }
+
+      try {
+        const hashedPassword = await bcrypt.hash(senha, 10);
+        
+        const tipoUsuario = tipo === 'profissional' ? 'Professor' : 'Aluno';
+
+        const insertUserQuery = 'INSERT INTO Usuario (nome, email, senha, tipo_usuario) VALUES (?, ?, ?, ?)';
+        db.query(insertUserQuery, [nomeCompleto, email, hashedPassword, tipoUsuario], (err, userResult) => {
+          if (err) {
+            console.error('Erro ao inserir usuário:', err);
+            return res.json({ success: false, message: 'Erro ao criar usuário' });
+          }
+
+          const userId = userResult.insertId;
+
+          if (tipoUsuario === 'Professor') {
+            const insertProfQuery = 'INSERT INTO Professor (id_usuario) VALUES (?)';
+            db.query(insertProfQuery, [userId], (err) => {
+              if (err) {
+                console.error('Erro ao inserir professor:', err);
+                return res.json({ success: false, message: 'Erro ao criar professor' });
+              }
+              res.json({ success: true, message: 'Cadastro realizado com sucesso!' });
+            });
+          } else {
+            const insertAlunoQuery = 'INSERT INTO Aluno (id_usuario) VALUES (?)';
+            db.query(insertAlunoQuery, [userId], (err) => {
+              if (err) {
+                console.error('Erro ao inserir aluno:', err);
+                return res.json({ success: false, message: 'Erro ao criar aluno' });
+              }
+              res.json({ success: true, message: 'Cadastro realizado com sucesso!' });
+            });
+          }
+        });
+      } catch (hashError) {
+        console.error('Erro ao criptografar senha:', hashError);
+        res.json({ success: false, message: 'Erro interno do servidor' });
+      }
     });
-    
   } catch (error) {
-    console.error('Erro ao cadastrar usuário:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Erro interno do servidor' 
-    });
+    console.error('Erro no cadastro:', error);
+    res.json({ success: false, message: 'Erro interno do servidor' });
   }
 });
 
-// Rota de teste
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'API funcionando!' });
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, senha } = req.body;
+
+    if (!email || !senha) {
+      return res.json({ success: false, message: 'Email e senha são obrigatórios' });
+    }
+
+    // Buscar usuário por email
+    const getUserQuery = 'SELECT * FROM Usuario WHERE email = ?';
+    db.query(getUserQuery, [email], async (err, results) => {
+      if (err) {
+        console.error('Erro ao buscar usuário:', err);
+        return res.json({ success: false, message: 'Erro interno do servidor' });
+      }
+
+      if (results.length === 0) {
+        return res.json({ success: false, message: 'Email não encontrado' });
+      }
+
+      const user = results[0];
+
+      try {
+        const isValidPassword = await bcrypt.compare(senha, user.senha);
+        
+        if (!isValidPassword) {
+          return res.json({ success: false, message: 'Senha incorreta' });
+        }
+
+        res.json({ 
+          success: true, 
+          message: 'Login realizado com sucesso!',
+          user: {
+            id: user.id_usuario,
+            nome: user.nome,
+            email: user.email,
+            tipo: user.tipo_usuario
+          }
+        });
+      } catch (compareError) {
+        console.error('Erro ao verificar senha:', compareError);
+        res.json({ success: false, message: 'Erro interno do servidor' });
+      }
+    });
+  } catch (error) {
+    console.error('Erro no login:', error);
+    res.json({ success: false, message: 'Erro interno do servidor' });
+  }
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+app.listen(port, () => {
+  console.log(`Servidor rodando na porta ${port}`);
 });

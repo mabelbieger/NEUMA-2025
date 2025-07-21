@@ -1,4 +1,5 @@
 import { useState, FormEvent } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function Cadastro() {
   const [formData, setFormData] = useState({
@@ -7,6 +8,8 @@ export default function Cadastro() {
     senha: '',
     tipo: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -18,16 +21,24 @@ export default function Cadastro() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
     try {
+      // Mapear os valores do frontend para o banco
+      const dadosParaEnvio = {
+        ...formData,
+        nome: formData.nomeCompleto, // Mapear nomeCompleto para nome
+        tipo_usuario: formData.tipo === 'estudante' ? 'Aluno' : 'Professor' // Mapear tipos
+      };
+
       const response = await fetch('http://localhost:3001/api/cadastro', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(dadosParaEnvio)
       });
-      
+
       const result = await response.json();
       
       if (result.success) {
@@ -39,12 +50,16 @@ export default function Cadastro() {
           senha: '',
           tipo: ''
         });
+        // Redirecionar para página Home após cadastro bem-sucedido
+        navigate('/home');
       } else {
         alert(`Erro: ${result.message}`);
       }
     } catch (error) {
       console.error('Erro ao cadastrar:', error);
       alert('Erro ao conectar com o servidor');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -86,10 +101,16 @@ export default function Cadastro() {
             gap: '10px'
           }}>
             Cadastro
-            <img src="/imagens/mascote.png" alt="Mascote" style={{ height: '40px' }} />
+            <img src="/imagens/mascote.png" alt="Mascote" style={{
+              height: '40px' 
+            }} />
           </h2>
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <form onSubmit={handleSubmit} style={{ 
+            display: 'flex',
+            flexDirection: 'column', 
+            gap: '20px' 
+          }}>
             <input
               type="text"
               name="nomeCompleto"
@@ -103,7 +124,8 @@ export default function Cadastro() {
                 borderRadius: '8px',
                 fontSize: '16px',
                 backgroundColor: 'white',
-                outline: 'none'
+                outline: 'none',
+                transition: 'border-color 0.2s'
               }}
             />
 
@@ -120,7 +142,8 @@ export default function Cadastro() {
                 borderRadius: '8px',
                 fontSize: '16px',
                 backgroundColor: 'white',
-                outline: 'none'
+                outline: 'none',
+                transition: 'border-color 0.2s'
               }}
             />
 
@@ -131,13 +154,15 @@ export default function Cadastro() {
               value={formData.senha}
               onChange={handleInputChange}
               required
+              minLength={6}
               style={{
                 padding: '12px 16px',
                 border: '2px solid #CED0FF',
                 borderRadius: '8px',
                 fontSize: '16px',
                 backgroundColor: 'white',
-                outline: 'none'
+                outline: 'none',
+                transition: 'border-color 0.2s'
               }}
             />
 
@@ -151,7 +176,8 @@ export default function Cadastro() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                color: '#333'
+                color: '#333',
+                cursor: 'pointer'
               }}>
                 <input
                   type="radio"
@@ -161,13 +187,15 @@ export default function Cadastro() {
                   onChange={handleInputChange}
                   required
                 />
-                Profissional
+                Professor
               </label>
+
               <label style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                color: '#333'
+                color: '#333',
+                cursor: 'pointer'
               }}>
                 <input
                   type="radio"
@@ -177,26 +205,28 @@ export default function Cadastro() {
                   onChange={handleInputChange}
                   required
                 />
-                Estudante
+                Aluno
               </label>
             </div>
 
             <button
               type="submit"
+              disabled={isLoading}
               style={{
-                backgroundColor: '#CED0FF',
+                backgroundColor: isLoading ? '#cccccc' : '#CED0FF',
                 color: '#150B53',
                 padding: '14px 20px',
                 border: 'none',
                 borderRadius: '8px',
                 fontSize: '16px',
                 fontWeight: '600',
-                cursor: 'pointer',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
                 marginTop: '20px',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                opacity: isLoading ? 0.7 : 1
               }}
             >
-              Cadastrar-se
+              {isLoading ? 'Cadastrando...' : 'Cadastrar-se'}
             </button>
 
             <p style={{
@@ -205,7 +235,10 @@ export default function Cadastro() {
               color: '#666',
               marginTop: '15px'
             }}>
-              Já possui uma conta? <a href="#" style={{ color: '#150B53', textDecoration: 'none' }}>Faça o login</a>
+              Já possui uma conta? <Link to="/login" style={{ 
+                color: '#150B53', 
+                textDecoration: 'none' 
+              }}>Faça o login</Link>
             </p>
           </form>
         </div>
@@ -221,8 +254,12 @@ export default function Cadastro() {
           position: 'relative',
           padding: '40px'
         }}>
-          <img src="/imagens/logo.png" alt="Logo Neuma" style={{ width: '60%', maxWidth: '200px', marginBottom: '20px' }} />
-
+          <img src="/imagens/logo.png" alt="Logo Neuma" style={{ 
+            width: '60%', 
+            maxWidth: '200px', 
+            marginBottom: '20px' 
+          }} />
+          
           <div style={{
             position: 'absolute',
             bottom: '20%',
@@ -233,7 +270,7 @@ export default function Cadastro() {
             borderRadius: '50%',
             opacity: 0.4
           }}></div>
-
+          
           <div style={{
             position: 'absolute',
             top: '30%',
