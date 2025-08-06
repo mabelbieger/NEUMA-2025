@@ -1,6 +1,13 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Home() {
+  const navigate = useNavigate();
+
+  const handleTesteVarkClick = () => {
+    navigate('/teste');
+  };
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
       {/* Header */}
@@ -51,18 +58,20 @@ export default function Home() {
             individuais dos alunos, tornando o aprendizado mais eficaz.
           </p>
           
-          <button style={{ 
-            backgroundColor: '#150B53', 
-            color: 'white', 
-            padding: '0.75rem 2rem', 
-            borderRadius: '0.5rem', 
-            fontWeight: '600', 
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '1rem',
-            transition: 'background-color 0.2s'
-          }}
-          
+          <button 
+            onClick={handleTesteVarkClick}
+            style={{ 
+              backgroundColor: '#150B53', 
+              color: 'white', 
+              padding: '0.75rem 2rem', 
+              borderRadius: '0.5rem', 
+              fontWeight: '600', 
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '1rem',
+              transition: 'background-color 0.2s'
+            }}
+            
           >
             Realizar o Teste VARK
           </button>
@@ -525,64 +534,59 @@ export default function Home() {
       </section>
 
       <footer style={{ backgroundColor: '#CED0FF', padding: '1rem 1rem' }}>
-  <div style={{
-    maxWidth: '72rem',
-    margin: '0 auto',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: '3rem',
-    flexWrap: 'wrap'
-  }}>
-    <div style={{ flex: '1 1 250px', minWidth: '250px' }}>
-      <h3 style={{
-        fontSize: '1.25rem',
-        fontWeight: 'bold',
-        color: '#111827',
-        marginBottom: '1rem'
-      }}>
-        Contato
-      </h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#374151', lineHeight: '1.5' }}>
-        <p><strong>Instagram:</strong><br />@projeto_neuma</p>
-        <p><strong>E-mail:</strong><br />projetoneuma@gmail.com</p>
-      </div>
-    </div>
+        <div style={{
+          maxWidth: '72rem',
+          margin: '0 auto',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: '3rem',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ flex: '1 1 250px', minWidth: '250px' }}>
+            <h3 style={{
+              fontSize: '1.25rem',
+              fontWeight: 'bold',
+              color: '#111827',
+              marginBottom: '1rem'
+            }}>
+              Contato
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#374151', lineHeight: '1.5' }}>
+              <p><strong>Instagram:</strong><br />@projeto_neuma</p>
+              <p><strong>E-mail:</strong><br />projetoneuma@gmail.com</p>
+            </div>
+          </div>
 
-<div style={{ flex: '1 1 250px', minWidth: '250px' }}>
-      <h3 style={{
-        fontSize: '1.25rem',
-        fontWeight: 'bold',
-        color: '#111827',
-        marginBottom: '1rem'
-      }}>
-        Desenvolvedoras
-      </h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#374151', lineHeight: '1.5' }}>
-        <p>Mariana Machado Welter <br /> Marina Isabel Bieger</p>
-      </div>
-    </div>
+          <div style={{ flex: '1 1 250px', minWidth: '250px' }}>
+            <h3 style={{
+              fontSize: '1.25rem',
+              fontWeight: 'bold',
+              color: '#111827',
+              marginBottom: '1rem'
+            }}>
+              Desenvolvedoras
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#374151', lineHeight: '1.5' }}>
+              <p>Mariana Machado Welter <br /> Marina Isabel Bieger</p>
+            </div>
+          </div>
 
-    <div style={{ flex: '0 0 auto', alignSelf: 'center' }}>
-      <img
-        src="/imagens/logo.png"
-        alt="Logo"
-        style={{
-          width: '8rem',
-          height: '8rem',
-          objectFit: 'contain',
-          display: 'block',
-          margin: '0 auto'
-        }}
-      />
-    </div>
-
-    
-  </div>
-</footer>
-
-
-
+          <div style={{ flex: '0 0 auto', alignSelf: 'center' }}>
+            <img
+              src="/imagens/logo.png"
+              alt="Logo"
+              style={{
+                width: '8rem',
+                height: '8rem',
+                objectFit: 'contain',
+                display: 'block',
+                margin: '0 auto'
+              }}
+            />
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
