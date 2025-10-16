@@ -23,13 +23,12 @@ export default function Cadastro() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+   
     try {
-      // Mapear os valores do frontend para o banco
       const dadosParaEnvio = {
         ...formData,
-        nome: formData.nomeCompleto, // Mapear nomeCompleto para nome
-        tipo_usuario: formData.tipo === 'estudante' ? 'Aluno' : 'Professor' // Mapear tipos
+        nome: formData.nomeCompleto, 
+        tipo_usuario: formData.tipo === 'estudante' ? 'Aluno' : 'Professor' 
       };
 
       const response = await fetch('http://localhost:3001/api/cadastro', {
@@ -41,18 +40,36 @@ export default function Cadastro() {
       });
 
       const result = await response.json();
-      
+     
       if (result.success) {
+        const userData = {
+          id: result.user.id,
+          nome: formData.nomeCompleto,
+          email: formData.email,
+          tipo: formData.tipo === 'estudante' ? 'Aluno' : 'Professor',
+          tipo_usuario: formData.tipo === 'estudante' ? 'Aluno' : 'Professor', // Adicione esta linha
+          isLoggedIn: true,
+          loginTime: new Date().toISOString()
+        };
+       
+        localStorage.setItem('loggedUser', JSON.stringify(userData));
+        localStorage.setItem('isAuthenticated', 'true');
+       
         alert('Cadastro realizado com sucesso!');
-        // Limpar formulário após sucesso
+       
         setFormData({
           nomeCompleto: '',
           email: '',
           senha: '',
           tipo: ''
         });
-        // Redirecionar para página Home após cadastro bem-sucedido
-        navigate('/home');
+       
+        // Redirecionar baseado no tipo de usuário
+        if (formData.tipo === 'profissional') {
+          navigate('/home-professor');
+        } else {
+          navigate('/home');
+        }
       } else {
         alert(`Erro: ${result.message}`);
       }
@@ -103,14 +120,14 @@ export default function Cadastro() {
           }}>
             Cadastro
             <img src="/imagens/mascote.png" alt="Mascote" style={{
-              height: '40px' 
+              height: '40px'
             }} />
           </h2>
 
-          <form onSubmit={handleSubmit} style={{ 
+          <form onSubmit={handleSubmit} style={{
             display: 'flex',
-            flexDirection: 'column', 
-            gap: '20px' 
+            flexDirection: 'column',
+            gap: '20px'
           }}>
             <input
               type="text"
@@ -239,9 +256,9 @@ export default function Cadastro() {
               color: '#666',
               marginTop: '15px'
             }}>
-              Já possui uma conta? <Link to="/login" style={{ 
-                color: '#150B53', 
-                textDecoration: 'none' 
+              Já possui uma conta? <Link to="/login" style={{
+                color: '#150B53',
+                textDecoration: 'none'
               }}>Faça o login</Link>
             </p>
           </form>
@@ -258,12 +275,12 @@ export default function Cadastro() {
           position: 'relative',
           padding: '40px'
         }}>
-          <img src="/imagens/logo.png" alt="Logo Neuma" style={{ 
-            width: '60%', 
-            maxWidth: '200px', 
-            marginBottom: '20px' 
+          <img src="/imagens/logo.png" alt="Logo Neuma" style={{
+            width: '60%',
+            maxWidth: '200px',
+            marginBottom: '20px'
           }} />
-          
+         
           <div style={{
             position: 'absolute',
             bottom: '20%',
@@ -274,7 +291,7 @@ export default function Cadastro() {
             borderRadius: '50%',
             opacity: 0.4
           }}></div>
-          
+         
           <div style={{
             position: 'absolute',
             top: '30%',

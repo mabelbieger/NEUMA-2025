@@ -18,15 +18,14 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+   
     try {
-      // Debug - mostrar dados que estão sendo enviados
       console.log('=== DEBUG LOGIN ===');
       console.log('Email:', formData.email);
       console.log('Senha:', formData.senha);
       console.log('Tamanho da senha:', formData.senha.length);
       console.log('Dados completos:', formData);
-      
+     
       const response = await fetch('http://localhost:3001/api/login', {
         method: 'POST',
         headers: {
@@ -34,20 +33,25 @@ export default function Login() {
         },
         body: JSON.stringify(formData)
       });
-      
+     
       console.log('Status da resposta:', response.status);
       const result = await response.json();
       console.log('Resposta completa do servidor:', result);
-      
+     
       if (result.success) {
-        // Salvar dados do usuário no sessionStorage
         if (result.user) {
-          sessionStorage.setItem('loggedUser', JSON.stringify(result.user));
+          localStorage.setItem('loggedUser', JSON.stringify(result.user));
+          console.log('Usuário salvo no localStorage:', result.user);
         }
-        
+       
         alert('Login realizado com sucesso!');
-        // Redirecionar para a página home
-        window.location.href = '/home';
+        
+        // Redirecionar baseado no tipo de usuário
+        if (result.user && result.user.tipo_usuario === 'Professor') {
+          window.location.href = '/home-professor';
+        } else {
+          window.location.href = '/home';
+        }
       } else {
         console.error('Erro de login:', result.message);
         alert(`Erro: ${result.message}`);
@@ -80,7 +84,6 @@ export default function Login() {
         overflow: 'hidden',
         boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
       }}>
-        {/* Lado esquerdo - Boas-vindas */}
         <div style={{
           flex: '1 1 50%',
           background: 'linear-gradient(135deg, #C8B8FF 0%, #E0D4FF 100%)',
@@ -102,7 +105,6 @@ export default function Login() {
           }}>
             Bem-vindo(a) novamente!
           </h1>
-          {/* Logo Neuma */}
           <div style={{
             position: 'relative',
             display: 'flex',
@@ -110,7 +112,6 @@ export default function Login() {
             justifyContent: 'center',
             marginBottom: '20px'
           }}>
-            {/* Logo */}
             <img
               src="/imagens/logo.png"
               alt="Logo Neuma"
@@ -123,7 +124,6 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Lado direito - Formulário de Login */}
         <div style={{
           flex: '1 1 50%',
           padding: 'clamp(30px, 5vw, 60px) clamp(20px, 4vw, 50px)',
@@ -157,7 +157,6 @@ export default function Login() {
             />
           </div>
 
-          {/* CORREÇÃO: Mudança de div para form */}
           <form onSubmit={handleSubmit} style={{
             display: 'flex',
             flexDirection: 'column',
@@ -184,7 +183,7 @@ export default function Login() {
               onFocus={(e) => e.target.style.borderColor = '#9B7EFF'}
               onBlur={(e) => e.target.style.borderColor = '#CED0FF'}
             />
-            
+           
             <input
               type="password"
               name="senha"
@@ -206,8 +205,7 @@ export default function Login() {
               onFocus={(e) => e.target.style.borderColor = '#9B7EFF'}
               onBlur={(e) => e.target.style.borderColor = '#CED0FF'}
             />
-            
-            {/* CORREÇÃO: Mudança de onClick para type="submit" */}
+           
             <button
               type="submit"
               disabled={isLoading}
@@ -228,7 +226,7 @@ export default function Login() {
             >
               {isLoading ? 'Fazendo login...' : 'Fazer login'}
             </button>
-            
+           
             <p style={{
               textAlign: 'center',
               fontSize: '12px',
@@ -237,7 +235,7 @@ export default function Login() {
               lineHeight: '1.4'
             }}>
               Não possui uma conta?
-              <span 
+              <span
                 onClick={() => window.location.href = '/cadastro'}
                 style={{
                   color: '#1B1464',
@@ -254,7 +252,6 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Media Query para responsividade em telas menores */}
       <style>
         {`
           @media (max-width: 768px) {

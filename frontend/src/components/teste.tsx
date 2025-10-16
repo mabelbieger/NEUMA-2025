@@ -3,6 +3,7 @@ import { ChevronRight, ChevronLeft, Eye, Headphones, BookOpen, Hand, BarChart3 }
 import { useNavigate } from 'react-router-dom';
 import Resultado from './resultado';
 
+
 interface Question {
   id: number;
   question: string;
@@ -13,6 +14,7 @@ interface Question {
     d: string;
   };
 }
+
 
 const questions: Question[] = [
   {
@@ -117,7 +119,9 @@ const questions: Question[] = [
   }
 ];
 
+
 type Answer = 'a' | 'b' | 'c' | 'd' | null;
+
 
 export default function Teste() {
   const navigate = useNavigate();
@@ -126,11 +130,13 @@ export default function Teste() {
   const [showResults, setShowResults] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
 
+
   const handleAnswer = (questionIndex: number, answer: Answer) => {
     const newAnswers = [...answers];
     newAnswers[questionIndex] = answer;
     setAnswers(newAnswers);
   };
+
 
   const goToNextSection = () => {
     if (currentSection < questions.length - 1) {
@@ -138,23 +144,27 @@ export default function Teste() {
     }
   };
 
+
   const goToPreviousSection = () => {
     if (currentSection > 0) {
       setCurrentSection(currentSection - 1);
     }
   };
 
+
   const canGoNext = () => {
     return answers[currentSection] !== null;
   };
+
 
   const finishTest = () => {
     setShowResults(true);
   };
 
+
   const calculateResults = () => {
     const scores = { V: 0, A: 0, R: 0, K: 0 };
-    
+   
     answers.forEach(answer => {
       if (answer === 'a') scores.V++;
       else if (answer === 'b') scores.A++;
@@ -162,8 +172,10 @@ export default function Teste() {
       else if (answer === 'd') scores.K++;
     });
 
+
     return scores;
   };
+
 
   const restartTest = () => {
     setCurrentSection(0);
@@ -172,134 +184,140 @@ export default function Teste() {
     setIsStarted(false);
   };
 
+
   const goBackToHome = () => {
     navigate('/home');
   };
+
 
   if (showResults) {
     return <Resultado scores={calculateResults()} onRestart={restartTest} onBackToHome={goBackToHome} />;
   }
 
+
   if (!isStarted) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
-        {/* Header */}
         <header style={{ backgroundColor: '#150B53', padding: '2rem 0' }}>
           <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '0 1rem', textAlign: 'center' }}>
             <div style={{ marginBottom: '1.5rem' }}>
-              <img 
-                src="/imagens/logo.png" 
-                alt="Logo" 
-                style={{ 
-                  width: '8rem', 
-                  height: '8rem', 
-                  margin: '0 auto', 
+              <img
+                src="/imagens/logo.png"
+                alt="Logo"
+                style={{
+                  width: '8rem',
+                  height: '8rem',
+                  margin: '0 auto',
                   display: 'block',
                   objectFit: 'contain'
-                }} 
+                }}
               />
             </div>
           </div>
         </header>
 
+
         <div style={{ padding: '4rem 1rem' }}>
-          <div style={{ 
-            backgroundColor: 'white', 
-            borderRadius: '1rem', 
-            boxShadow: '0 1px 7px rgba(57, 0, 227, 0.78)', 
-            padding: '3rem', 
-            maxWidth: '48rem', 
-            width: '100%', 
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '1rem',
+            boxShadow: '0 1px 7px rgba(57, 0, 227, 0.78)',
+            padding: '3rem',
+            maxWidth: '48rem',
+            width: '100%',
             margin: '0 auto',
-            textAlign: 'center' 
+            textAlign: 'center'
           }}>
             <div style={{ marginBottom: '2rem' }}>
-              
-              <h1 style={{ 
-                fontSize: '2.25rem', 
-                fontWeight: 'bold', 
-                color: '#111827', 
-                marginBottom: '1rem' 
+             
+              <h1 style={{
+                fontSize: '2.25rem',
+                fontWeight: 'bold',
+                color: '#111827',
+                marginBottom: '1rem'
               }}>
                 Teste VARK
               </h1>
-              <p style={{ 
-                color: '#374151', 
-                fontSize: '1.125rem', 
-                lineHeight: '1.6' 
+              <p style={{
+                color: '#374151',
+                fontSize: '1.125rem',
+                lineHeight: '1.6'
               }}>
                 Descubra seu estilo de aprendizagem preferido e potencialize seus estudos em matemática!
               </p>
             </div>
 
 
-            <div style={{ 
-              backgroundColor: '#CED0FF', 
-              padding: '1.5rem', 
-              borderRadius: '0.75rem', 
-              marginBottom: '2rem' 
+
+
+            <div style={{
+              backgroundColor: '#CED0FF',
+              padding: '1.5rem',
+              borderRadius: '0.75rem',
+              marginBottom: '2rem'
             }}>
               <h2 style={{ fontWeight: '600', color: '#111827', marginBottom: '0.75rem' }}>Como funciona:</h2>
-              <ul style={{ 
-                fontSize: '0.875rem', 
-                color: '#374151', 
-                listStyle: 'none', 
-                padding: 0, 
+              <ul style={{
+                fontSize: '0.875rem',
+                color: '#374151',
+                listStyle: 'none',
+                padding: 0,
                 margin: 0,
                 textAlign: 'left'
               }}>
                 <li style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <div style={{ 
-                    width: '0.5rem', 
-                    height: '0.5rem', 
-                    backgroundColor: '#150B53', 
-                    borderRadius: '50%', 
-                    marginRight: '0.75rem' 
+                  <div style={{
+                    width: '0.5rem',
+                    height: '0.5rem',
+                    backgroundColor: '#150B53',
+                    borderRadius: '50%',
+                    marginRight: '0.75rem'
                   }}></div>
                   10 perguntas sobre suas preferências de aprendizagem
                 </li>
                 <li style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <div style={{ 
-                    width: '0.5rem', 
-                    height: '0.5rem', 
-                    backgroundColor: '#150B53', 
-                    borderRadius: '50%', 
-                    marginRight: '0.75rem' 
+                  <div style={{
+                    width: '0.5rem',
+                    height: '0.5rem',
+                    backgroundColor: '#150B53',
+                    borderRadius: '50%',
+                    marginRight: '0.75rem'
                   }}></div>
                   Cada pergunta tem 4 alternativas (A, B, C, D)
                 </li>
                 <li style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <div style={{ 
-                    width: '0.5rem', 
-                    height: '0.5rem', 
-                    backgroundColor: '#150B53', 
-                    borderRadius: '50%', 
-                    marginRight: '0.75rem' 
+                  <div style={{
+                    width: '0.5rem',
+                    height: '0.5rem',
+                    backgroundColor: '#150B53',
+                    borderRadius: '50%',
+                    marginRight: '0.75rem'
                   }}></div>
                   Resultado personalizado com dicas de estudo
                 </li>
                 <li style={{ display: 'flex', alignItems: 'center' }}>
-                  <div style={{ 
-                    width: '0.5rem', 
-                    height: '0.5rem', 
-                    backgroundColor: '#150B53', 
-                    borderRadius: '50%', 
-                    marginRight: '0.75rem' 
+                  <div style={{
+                    width: '0.5rem',
+                    height: '0.5rem',
+                    backgroundColor: '#150B53',
+                    borderRadius: '50%',
+                    marginRight: '0.75rem'
                   }}></div>
                   Tempo estimado: 5-10 minutos
                 </li>
               </ul>
             </div>
 
+
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button
                 onClick={() => setIsStarted(true)}
-                style={{ 
-                  backgroundColor: '#150B53', 
-                  color: 'white', 
-                  padding: '1rem 2rem', 
-                  borderRadius: '0.75rem', 
-                  fontWeight: '600', 
+                style={{
+                  backgroundColor: '#150B53',
+                  color: 'white',
+                  padding: '1rem 2rem',
+                  borderRadius: '0.75rem',
+                  fontWeight: '600',
                   fontSize: '1.125rem',
                   border: 'none',
                   cursor: 'pointer',
@@ -317,15 +335,15 @@ export default function Teste() {
               >
                 Iniciar Teste
               </button>
-              
+             
               <button
                 onClick={goBackToHome}
-                style={{ 
-                  backgroundColor: '#f3f4f6', 
-                  color: '#374151', 
-                  padding: '1rem 2rem', 
-                  borderRadius: '0.75rem', 
-                  fontWeight: '600', 
+                style={{
+                  backgroundColor: '#f3f4f6',
+                  color: '#374151',
+                  padding: '1rem 2rem',
+                  borderRadius: '0.75rem',
+                  fontWeight: '600',
                   fontSize: '1.125rem',
                   border: 'none',
                   cursor: 'pointer',
@@ -347,42 +365,43 @@ export default function Teste() {
     );
   }
 
+
   const currentQuestion = questions[currentSection];
   const progress = ((currentSection + 1) / questions.length) * 100;
 
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
-      {/* Header */}
       <header style={{ backgroundColor: '#150B53', padding: '1.5rem 0' }}>
         <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '0 1rem', textAlign: 'center' }}>
-          <img 
-            src="/imagens/logo.png" 
-            alt="Logo" 
-            style={{ 
-              width: '6rem', 
-              height: '6rem', 
-              margin: '0 auto', 
+          <img
+            src="/imagens/logo.png"
+            alt="Logo"
+            style={{
+              width: '6rem',
+              height: '6rem',
+              margin: '0 auto',
               display: 'block',
               objectFit: 'contain'
-            }} 
+            }}
           />
         </div>
       </header>
 
+
       <div style={{ padding: '2rem 1rem' }}>
         <div style={{ maxWidth: '56rem', margin: '0 auto' }}>
-          {/* Header com progresso */}
-          <div style={{ 
-            backgroundColor: 'white', 
-            borderRadius: '1rem', 
-            boxShadow: '0 1px 7px rgba(57, 0, 227, 0.78)', 
-            padding: '1.5rem', 
-            marginBottom: '1.5rem' 
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '1rem',
+            boxShadow: '0 1px 7px rgba(57, 0, 227, 0.78)',
+            padding: '1.5rem',
+            marginBottom: '1.5rem'
           }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between', 
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
               marginBottom: '1rem',
               flexWrap: 'wrap',
               gap: '1rem'
@@ -394,18 +413,18 @@ export default function Teste() {
                 Pergunta {currentSection + 1} de {questions.length}
               </span>
             </div>
-            
-            <div style={{ 
-              width: '100%', 
-              backgroundColor: '#e5e7eb', 
-              borderRadius: '9999px', 
-              height: '0.75rem' 
+           
+            <div style={{
+              width: '100%',
+              backgroundColor: '#e5e7eb',
+              borderRadius: '9999px',
+              height: '0.75rem'
             }}>
-              <div 
-                style={{ 
-                  backgroundColor: '#150B53', 
-                  height: '0.75rem', 
-                  borderRadius: '9999px', 
+              <div
+                style={{
+                  backgroundColor: '#150B53',
+                  height: '0.75rem',
+                  borderRadius: '9999px',
                   transition: 'width 0.3s ease',
                   width: `${progress}%`
                 }}
@@ -413,24 +432,25 @@ export default function Teste() {
             </div>
           </div>
 
-          {/* Pergunta atual */}
-          <div style={{ 
-            backgroundColor: 'white', 
-            borderRadius: '1rem', 
-            boxShadow: '0 1px 7px rgba(57, 0, 227, 0.78)', 
-            padding: '2rem' 
+
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '1rem',
+            boxShadow: '0 1px 7px rgba(57, 0, 227, 0.78)',
+            padding: '2rem'
           }}>
             <div style={{ marginBottom: '2rem' }}>
-              <h2 style={{ 
-                fontSize: '1.25rem', 
-                fontWeight: '600', 
-                color: '#111827', 
+              <h2 style={{
+                fontSize: '1.25rem',
+                fontWeight: '600',
+                color: '#111827',
                 lineHeight: '1.6',
                 margin: 0
               }}>
                 {currentQuestion.question}
               </h2>
             </div>
+
 
             <div style={{ marginBottom: '2rem' }}>
               {Object.entries(currentQuestion.options).map(([key, option]) => (
@@ -464,18 +484,18 @@ export default function Teste() {
                       value={key}
                       checked={answers[currentSection] === key}
                       onChange={() => handleAnswer(currentSection, key as Answer)}
-                      style={{ 
-                        marginTop: '0.25rem', 
-                        width: '1rem', 
+                      style={{
+                        marginTop: '0.25rem',
+                        width: '1rem',
                         height: '1rem',
                         accentColor: '#150B53'
                       }}
                     />
                     <div>
-                      <span style={{ 
-                        fontWeight: '600', 
-                        color: '#150B53', 
-                        marginRight: '0.5rem' 
+                      <span style={{
+                        fontWeight: '600',
+                        color: '#150B53',
+                        marginRight: '0.5rem'
                       }}>
                         {key.toUpperCase()})
                       </span>
@@ -486,10 +506,10 @@ export default function Teste() {
               ))}
             </div>
 
-            {/* Navegação */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
+
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
               alignItems: 'center',
               flexWrap: 'wrap',
               gap: '1rem'
@@ -524,6 +544,7 @@ export default function Teste() {
                 <ChevronLeft style={{ width: '1rem', height: '1rem' }} />
                 <span>Anterior</span>
               </button>
+
 
               {currentSection === questions.length - 1 ? (
                 <button
@@ -597,11 +618,11 @@ export default function Teste() {
             </div>
           </div>
 
-          {/* Indicador de seções */}
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            marginTop: '1.5rem', 
+
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            marginTop: '1.5rem',
             gap: '0.5rem',
             flexWrap: 'wrap'
           }}>
@@ -613,7 +634,7 @@ export default function Teste() {
                   height: '0.75rem',
                   borderRadius: '50%',
                   transition: 'all 0.2s',
-                  backgroundColor: 
+                  backgroundColor:
                     index === currentSection
                       ? '#150B53'
                       : answers[index] !== null

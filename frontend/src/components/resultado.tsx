@@ -1,18 +1,85 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Eye, Headphones, BookOpen, Hand, RotateCcw, Download, Share2, Home } from 'lucide-react';
+
 
 interface ResultadoProps {
   scores: {
-    V: number; 
-    A: number; 
-    R: number; 
-    K: number; 
+    V: number;
+    A: number;
+    R: number;
+    K: number;
   };
   onRestart: () => void;
   onBackToHome: () => void;
 }
 
+
 export default function Resultado({ scores, onRestart, onBackToHome }: ResultadoProps) {
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const navigate = useNavigate();
+
+  const saveResultsToDatabase = async () => {
+    try {
+      setIsSaving(true);
+      
+      const loggedUserData = localStorage.getItem('loggedUser');
+      if (!loggedUserData) {
+        console.error('Usuário não encontrado no localStorage');
+        return;
+      }
+
+      const user = JSON.parse(loggedUserData);
+      console.log('Usuário logado:', user);
+      
+      if (user.tipo !== 'Aluno') {
+        console.log('Apenas alunos podem salvar resultados do teste');
+        return;
+      }
+
+      const dataToSend = {
+        userId: user.id,
+        scores: scores
+      };
+
+      console.log('Salvando resultados:', dataToSend);
+
+      const response = await fetch('http://localhost:3001/api/salvar-teste', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSend)
+      });
+
+      const result = await response.json();
+      console.log('Resposta do servidor:', result);
+
+      if (result.success) {
+        setIsSaved(true);
+        console.log('Resultados salvos com sucesso no banco de dados');
+      } else {
+        console.error('Erro ao salvar resultados:', result.message);
+      }
+
+    } catch (error) {
+      console.error('Erro ao salvar resultados no banco:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    const loggedUserData = localStorage.getItem('loggedUser');
+    if (loggedUserData) {
+      const user = JSON.parse(loggedUserData);
+      if (user.tipo === 'Aluno') {
+        saveResultsToDatabase();
+      }
+    }
+  }, []);
+
   const getDominantStyle = () => {
     const styles = [
       { name: 'Visual', code: 'V', score: scores.V },
@@ -134,31 +201,56 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
       {/* Header */}
       <header style={{ backgroundColor: '#150B53', padding: '1.5rem 0' }}>
         <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '0 1rem', textAlign: 'center' }}>
-          <img 
-            src="/imagens/logo.png" 
-            alt="Logo" 
-            style={{ 
-              width: '6rem', 
-              height: '6rem', 
-              margin: '0 auto', 
+          <img
+            src="/imagens/logo.png"
+            alt="Logo"
+            style={{
+              width: '6rem',
+              height: '6rem',
+              margin: '0 auto',
               display: 'block',
               objectFit: 'contain'
-            }} 
+            }}
           />
         </div>
       </header>
 
       <div style={{ padding: '2rem 1rem' }}>
         <div style={{ maxWidth: '56rem', margin: '0 auto' }}>
-          {/* Header dos resultados */}
-          <div style={{ 
-            backgroundColor: 'white', 
-            borderRadius: '1rem', 
-            boxShadow: '0 1px 7px rgba(57, 0, 227, 0.78)', 
-            padding: '2rem', 
-            marginBottom: '1.5rem', 
-            textAlign: 'center' 
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '1rem',
+            boxShadow: '0 1px 7px rgba(57, 0, 227, 0.78)',
+            padding: '2rem',
+            marginBottom: '1.5rem',
+            textAlign: 'center'
           }}>
+            {isSaving && (
+              <div style={{
+                backgroundColor: '#fef3c7',
+                color: '#92400e',
+                padding: '0.75rem',
+                borderRadius: '0.5rem',
+                marginBottom: '1rem',
+                fontSize: '0.875rem'
+              }}>
+                Salvando seus resultados...
+              </div>
+            )}
+           
+            {isSaved && (
+              <div style={{
+                backgroundColor: '#d1fae5',
+                color: '#065f46',
+                padding: '0.75rem',
+                borderRadius: '0.5rem',
+                marginBottom: '1rem',
+                fontSize: '0.875rem'
+              }}>
+                ✓ Resultados salvos com sucesso!
+              </div>
+            )}
+
             <div style={{ marginBottom: '1.5rem' }}>
               <div style={{
                 width: '5rem',
@@ -173,16 +265,16 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
               }}>
                 <primaryStyle.icon style={{ width: '2.5rem', height: '2.5rem', color: primaryStyle.color }} />
               </div>
-              <h1 style={{ 
-                fontSize: '2rem', 
-                fontWeight: 'bold', 
-                color: '#111827', 
-                marginBottom: '0.5rem' 
+              <h1 style={{
+                fontSize: '2rem',
+                fontWeight: 'bold',
+                color: '#111827',
+                marginBottom: '0.5rem'
               }}>
                 Resultado do seu Teste VARK
               </h1>
               <p style={{ fontSize: '1.25rem', color: '#374151' }}>
-                Seu estilo de aprendizagem predominante é: 
+                Seu estilo de aprendizagem predominante é:
                 <span style={{ fontWeight: 'bold', color: primaryStyle.textColor, marginLeft: '0.5rem' }}>
                   {primaryStyle.name}
                 </span>
@@ -201,11 +293,11 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
               </p>
             </div>
 
-            <div style={{ 
-              display: 'flex', 
-              flexWrap: 'wrap', 
-              justifyContent: 'center', 
-              gap: '1rem' 
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              gap: '1rem'
             }}>
               <button
                 onClick={onRestart}
@@ -232,7 +324,7 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
                 <RotateCcw style={{ width: '1rem', height: '1rem' }} />
                 <span>Refazer Teste</span>
               </button>
-              
+             
               <button
                 onClick={onBackToHome}
                 style={{
@@ -258,24 +350,21 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
                 <Home style={{ width: '1rem', height: '1rem' }} />
                 <span>Voltar ao Início</span>
               </button>
-
-
             </div>
           </div>
 
-          {/* Gráfico de pontuações */}
-          <div style={{ 
-            backgroundColor: 'white', 
-            borderRadius: '1rem', 
-            boxShadow: '0 1px 7px rgba(57, 0, 227, 0.78)', 
-            padding: '2rem', 
-            marginBottom: '1.5rem' 
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '1rem',
+            boxShadow: '0 1px 7px rgba(57, 0, 227, 0.78)',
+            padding: '2rem',
+            marginBottom: '1.5rem'
           }}>
-            <h2 style={{ 
-              fontSize: '1.5rem', 
-              fontWeight: 'bold', 
-              color: '#111827', 
-              marginBottom: '1.5rem' 
+            <h2 style={{
+              fontSize: '1.5rem',
+              fontWeight: 'bold',
+              color: '#111827',
+              marginBottom: '1.5rem'
             }}>
               Distribuição dos seus Estilos
             </h2>
@@ -283,7 +372,7 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
               {sortedStyles.map((style, index) => {
                 const styleInfo = getStyleInfo(style.code);
                 const percentage = getPercentage(style.score);
-                
+               
                 return (
                   <div key={style.code} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{
@@ -300,28 +389,28 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
                       <styleInfo.icon style={{ width: '1.5rem', height: '1.5rem', color: styleInfo.color }} />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center', 
-                        marginBottom: '0.5rem' 
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '0.5rem'
                       }}>
                         <span style={{ fontWeight: '600', color: '#374151' }}>{styleInfo.name}</span>
                         <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
                           {style.score}/10 ({percentage}%)
                         </span>
                       </div>
-                      <div style={{ 
-                        width: '100%', 
-                        backgroundColor: '#e5e7eb', 
-                        borderRadius: '9999px', 
-                        height: '0.75rem' 
+                      <div style={{
+                        width: '100%',
+                        backgroundColor: '#e5e7eb',
+                        borderRadius: '9999px',
+                        height: '0.75rem'
                       }}>
-                        <div 
-                          style={{ 
-                            backgroundColor: styleInfo.color, 
-                            height: '0.75rem', 
-                            borderRadius: '9999px', 
+                        <div
+                          style={{
+                            backgroundColor: styleInfo.color,
+                            height: '0.75rem',
+                            borderRadius: '9999px',
                             transition: 'width 1s ease',
                             width: `${percentage}%`
                           }}
@@ -334,40 +423,38 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
             </div>
           </div>
 
-          {/* Dicas personalizadas */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
-            gap: '1.5rem' 
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '1.5rem'
           }}>
-            {/* Dicas gerais */}
-            <div style={{ 
-              backgroundColor: 'white', 
-              borderRadius: '1rem', 
-              boxShadow: '0 1px 7px rgba(57, 0, 227, 0.78)', 
-              padding: '2rem' 
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '1rem',
+              boxShadow: '0 1px 7px rgba(57, 0, 227, 0.78)',
+              padding: '2rem'
             }}>
-              <h3 style={{ 
-                fontSize: '1.25rem', 
-                fontWeight: 'bold', 
-                color: '#111827', 
-                marginBottom: '1rem' 
+              <h3 style={{
+                fontSize: '1.25rem',
+                fontWeight: 'bold',
+                color: '#111827',
+                marginBottom: '1rem'
               }}>
                 Dicas Gerais de Estudo
               </h3>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 {primaryStyle.tips.map((tip, index) => (
-                  <li key={index} style={{ 
-                    display: 'flex', 
-                    alignItems: 'flex-start', 
+                  <li key={index} style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
                     gap: '0.75rem',
                     marginBottom: '0.75rem'
                   }}>
-                    <div style={{ 
-                      width: '0.5rem', 
-                      height: '0.5rem', 
-                      backgroundColor: primaryStyle.color, 
-                      borderRadius: '50%', 
+                    <div style={{
+                      width: '0.5rem',
+                      height: '0.5rem',
+                      backgroundColor: primaryStyle.color,
+                      borderRadius: '50%',
                       marginTop: '0.5rem',
                       flexShrink: 0
                     }}></div>
@@ -377,34 +464,33 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
               </ul>
             </div>
 
-            {/* Dicas específicas para matemática */}
-            <div style={{ 
-              backgroundColor: 'white', 
-              borderRadius: '1rem', 
-              boxShadow: '0 1px 7px rgba(57, 0, 227, 0.78)', 
-              padding: '2rem' 
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '1rem',
+              boxShadow: '0 1px 7px rgba(57, 0, 227, 0.78)',
+              padding: '2rem'
             }}>
-              <h3 style={{ 
-                fontSize: '1.25rem', 
-                fontWeight: 'bold', 
-                color: '#111827', 
-                marginBottom: '1rem' 
+              <h3 style={{
+                fontSize: '1.25rem',
+                fontWeight: 'bold',
+                color: '#111827',
+                marginBottom: '1rem'
               }}>
                 Dicas para Matemática
               </h3>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 {primaryStyle.mathTips.map((tip, index) => (
-                  <li key={index} style={{ 
-                    display: 'flex', 
-                    alignItems: 'flex-start', 
+                  <li key={index} style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
                     gap: '0.75rem',
                     marginBottom: '0.75rem'
                   }}>
-                    <div style={{ 
-                      width: '0.5rem', 
-                      height: '0.5rem', 
-                      backgroundColor: primaryStyle.color, 
-                      borderRadius: '50%', 
+                    <div style={{
+                      width: '0.5rem',
+                      height: '0.5rem',
+                      backgroundColor: primaryStyle.color,
+                      borderRadius: '50%',
                       marginTop: '0.5rem',
                       flexShrink: 0
                     }}></div>
@@ -415,30 +501,29 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
             </div>
           </div>
 
-          {/* Combinações de estilos */}
           {sortedStyles[1].score > 0 && (
-            <div style={{ 
-              backgroundColor: 'white', 
-              borderRadius: '1rem', 
-              boxShadow: '0 1px 7px rgba(57, 0, 227, 0.78)', 
-              padding: '2rem', 
-              marginTop: '1.5rem' 
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '1rem',
+              boxShadow: '0 1px 7px rgba(57, 0, 227, 0.78)',
+              padding: '2rem',
+              marginTop: '1.5rem'
             }}>
-              <h3 style={{ 
-                fontSize: '1.25rem', 
-                fontWeight: 'bold', 
-                color: '#111827', 
-                marginBottom: '1rem' 
+              <h3 style={{
+                fontSize: '1.25rem',
+                fontWeight: 'bold',
+                color: '#111827',
+                marginBottom: '1rem'
               }}>
                 Estilos Secundários
               </h3>
               <p style={{ color: '#374151', marginBottom: '1rem' }}>
                 Você também apresenta características dos seguintes estilos de aprendizagem:
               </p>
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-                gap: '1rem' 
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                gap: '1rem'
               }}>
                 {sortedStyles.slice(1).filter(style => style.score > 0).map(style => {
                   const styleInfo = getStyleInfo(style.code);
@@ -449,11 +534,11 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
                       borderRadius: '0.75rem',
                       padding: '1rem'
                     }}>
-                      <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '0.75rem', 
-                        marginBottom: '0.5rem' 
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        marginBottom: '0.5rem'
                       }}>
                         <styleInfo.icon style={{ width: '1.25rem', height: '1.25rem', color: styleInfo.color }} />
                         <span style={{ fontWeight: '600', color: styleInfo.textColor }}>{styleInfo.name}</span>
@@ -468,45 +553,46 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
             </div>
           )}
 
-          {/* Próximos passos */}
-          <div style={{ 
-            background: '#150B53', 
-            borderRadius: '1rem', 
-            boxShadow: '0 1px 7px rgba(57, 0, 227, 0.78)', 
-            padding: '2rem', 
-            marginTop: '1.5rem', 
-            color: 'white', 
-            textAlign: 'center' 
+          <div style={{
+            background: '#150B53',
+            borderRadius: '1rem',
+            boxShadow: '0 1px 7px rgba(57, 0, 227, 0.78)',
+            padding: '2rem',
+            marginTop: '1.5rem',
+            color: 'white',
+            textAlign: 'center'
           }}>
             <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '2rem' }}>
               Siga em frente!
             </h3>
-            
-            <div style={{ 
-              display: 'flex', 
-              flexWrap: 'wrap', 
-              justifyContent: 'center', 
-              gap: '1rem' 
+           
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              gap: '1rem'
             }}>
-              <button style={{
-                backgroundColor: 'white',
-                color: '#150B53',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '0.75rem',
-                fontWeight: '600',
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = '#f8fafc';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = 'white';
-              }}>
+              <button
+                style={{
+                  backgroundColor: 'white',
+                  color: '#150B53',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '0.75rem',
+                  fontWeight: '600',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onClick={() => navigate('/personalizada')}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f8fafc';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = 'white';
+                }}
+              >
                 Ir para a sua página personalizada
               </button>
-              
             </div>
           </div>
         </div>

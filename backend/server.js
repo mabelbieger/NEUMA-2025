@@ -16,8 +16,8 @@ app.use((req, res, next) => {
 
 const db = mysql.createConnection({
   host: 'mysql.infocimol.com.br',
-  user: 'infocimol17', 
-  password: 'N1e2u3m4a5', 
+  user: 'infocimol17',
+  password: 'N1e2u3m4a5',
   database: 'infocimol17'
 });
 
@@ -29,16 +29,18 @@ db.connect((err) => {
   }
 });
 
-// Rota para testar se o servidor está funcionando
 app.get('/api/status', (req, res) => {
   res.json({ status: 'Servidor funcionando!', timestamp: new Date().toISOString() });
 });
 
 app.post('/api/cadastro', async (req, res) => {
   try {
-    const { nomeCompleto, email, senha, tipo } = req.body;
+    const { nomeCompleto, email, senha, tipo, nome, tipo_usuario } = req.body;
 
-    if (!nomeCompleto || !email || !senha || !tipo) {
+    const nomeUsuario = nome || nomeCompleto;
+    const tipoUsuario = tipo_usuario || (tipo === 'profissional' ? 'Professor' : tipo === 'estudante' ? 'Aluno' : tipo);
+
+    if (!nomeUsuario || !email || !senha || !tipoUsuario) {
       return res.json({ success: false, message: 'Todos os campos são obrigatórios' });
     }
 
@@ -55,11 +57,9 @@ app.post('/api/cadastro', async (req, res) => {
 
       try {
         const hashedPassword = await bcrypt.hash(senha, 10);
-        
-        const tipoUsuario = tipo === 'profissional' ? 'Professor' : 'Aluno';
 
         const insertUserQuery = 'INSERT INTO Usuario (nome, email, senha, tipo_usuario) VALUES (?, ?, ?, ?)';
-        db.query(insertUserQuery, [nomeCompleto, email, hashedPassword, tipoUsuario], (err, userResult) => {
+        db.query(insertUserQuery, [nomeUsuario, email, hashedPassword, tipoUsuario], (err, userResult) => {
           if (err) {
             console.error('Erro ao inserir usuário:', err);
             return res.json({ success: false, message: 'Erro ao criar usuário' });
@@ -69,12 +69,23 @@ app.post('/api/cadastro', async (req, res) => {
 
           if (tipoUsuario === 'Professor') {
             const insertProfQuery = 'INSERT INTO Professor (id_usuario) VALUES (?)';
-            db.query(insertProfQuery, [userId], (err) => {
+            db.query(insertProfQuery, [userId], (err, profResult) => {
               if (err) {
                 console.error('Erro ao inserir professor:', err);
                 return res.json({ success: false, message: 'Erro ao criar professor' });
               }
-              res.json({ success: true, message: 'Cadastro realizado com sucesso!' });
+              
+              res.json({
+                success: true,
+                message: 'Cadastro realizado com sucesso!',
+                user: {
+                  id: userId,
+                  id_professor: profResult.insertId, // ID da tabela Professor
+                  nome: nomeUsuario,
+                  email: email,
+                  tipo: tipoUsuario
+                }
+              });
             });
           } else {
             const insertAlunoQuery = 'INSERT INTO Aluno (id_usuario) VALUES (?)';
@@ -83,7 +94,16 @@ app.post('/api/cadastro', async (req, res) => {
                 console.error('Erro ao inserir aluno:', err);
                 return res.json({ success: false, message: 'Erro ao criar aluno' });
               }
-              res.json({ success: true, message: 'Cadastro realizado com sucesso!' });
+              res.json({
+                success: true,
+                message: 'Cadastro realizado com sucesso!',
+                user: {
+                  id: userId,
+                  nome: nomeUsuario,
+                  email: email,
+                  tipo: tipoUsuario
+                }
+              });
             });
           }
         });
@@ -98,22 +118,32 @@ app.post('/api/cadastro', async (req, res) => {
   }
 });
 
-// SUBSTITUA apenas a rota de LOGIN por esta versão:
-
 app.post('/api/login', async (req, res) => {
   try {
     const { email, senha } = req.body;
 
     console.log('=== DEBUG BACKEND LOGIN ===');
     console.log('Email recebido:', email);
-    console.log('Senha recebida:', senha);
 
     if (!email || !senha) {
       return res.json({ success: false, message: 'Email e senha são obrigatórios' });
     }
 
-    // Buscar usuário por email
-    const getUserQuery = 'SELECT * FROM Usuario WHERE email = ?';
+    const getUserQuery = `
+      SELECT 
+        u.id_usuario,
+        u.nome,
+        u.email,
+        u.senha,
+        u.tipo_usuario,
+        p.id_professor,
+        a.id_aluno
+      FROM Usuario u
+      LEFT JOIN Professor p ON u.id_usuario = p.id_usuario
+      LEFT JOIN Aluno a ON u.id_usuario = a.id_usuario
+      WHERE u.email = ?
+    `;
+    
     db.query(getUserQuery, [email], async (err, results) => {
       if (err) {
         console.error('Erro ao buscar usuário:', err);
@@ -126,37 +156,26 @@ app.post('/api/login', async (req, res) => {
       }
 
       const user = results[0];
-      
       console.log('Usuário encontrado:', user.email);
-      console.log('Senha hash no banco:', user.senha);
-      console.log('Tamanho do hash:', user.senha ? user.senha.length : 'undefined');
+      console.log('Tipo:', user.tipo_usuario);
+      console.log('ID Professor:', user.id_professor);
 
       try {
         let isValidPassword = false;
-        
-        // Verificar se é um hash bcrypt válido E completo
-        const isValidBcryptHash = user.senha && 
-                                 user.senha.startsWith('$2b$') && 
-                                 user.senha.length >= 59; // Hash completo
-        
-        console.log('Hash parece ser bcrypt completo?', isValidBcryptHash);
+       
+        const isValidBcryptHash = user.senha &&
+                                 user.senha.startsWith('$2b$') &&
+                                 user.senha.length >= 59; 
 
         if (!isValidBcryptHash) {
-          // Para senhas antigas truncadas ou em texto plano
-          console.log('Senha antiga - comparando diretamente ou tentando recuperar...');
-          
-          // Se a senha no banco tem exatamente 50 chars e começa com $2b$10$
           if (user.senha.length === 50 && user.senha.startsWith('$2b$10$')) {
-            // Senha truncada - vamos tentar algumas senhas comuns para recuperar
             const senhasComuns = ['123456', '123', 'senha123', 'admin', senha];
-            
+           
             for (let senhaComum of senhasComuns) {
               try {
                 const hashCompleto = await bcrypt.hash(senhaComum, 10);
-                // Comparar os primeiros 50 caracteres
                 if (hashCompleto.substring(0, 50) === user.senha) {
                   isValidPassword = (senha === senhaComum);
-                  console.log(`Senha recuperada: ${senhaComum}, válida: ${isValidPassword}`);
                   break;
                 }
               } catch (e) {
@@ -164,34 +183,39 @@ app.post('/api/login', async (req, res) => {
               }
             }
           } else {
-            // Comparação direta para senhas em texto
             isValidPassword = senha === user.senha;
           }
-          
         } else {
-          // Usar bcrypt para senhas criptografadas completas
-          console.log('Usando bcrypt.compare...');
           isValidPassword = await bcrypt.compare(senha, user.senha);
-          console.log('Resultado bcrypt.compare:', isValidPassword);
         }
-        
+       
         if (!isValidPassword) {
-          console.log('Senha incorreta');
           return res.json({ success: false, message: 'Senha incorreta' });
         }
 
+        const responseUser = {
+          id: user.id_usuario,
+          nome: user.nome,
+          email: user.email,
+          tipo: user.tipo_usuario
+        };
+
+        if (user.tipo_usuario === 'Professor' && user.id_professor) {
+          responseUser.id_professor = user.id_professor;
+        }
+        if (user.tipo_usuario === 'Aluno' && user.id_aluno) {
+          responseUser.id_aluno = user.id_aluno;
+        }
+
         console.log('Login bem-sucedido para:', email);
-        res.json({ 
-          success: true, 
-          message: 'Login realizado com sucesso!',
-          user: {
-            id: user.id_usuario,
-            nome: user.nome,
-            email: user.email,
-            tipo: user.tipo_usuario
-          }
-        });
+        console.log('Dados retornados:', responseUser);
         
+        res.json({
+          success: true,
+          message: 'Login realizado com sucesso!',
+          user: responseUser
+        });
+       
       } catch (compareError) {
         console.error('Erro ao verificar senha:', compareError);
         res.json({ success: false, message: 'Erro interno do servidor' });
@@ -203,71 +227,228 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// E MANTENHA a rota de CADASTRO normal para novos usuários:
-app.post('/api/cadastro', async (req, res) => {
+app.post('/api/turmas', (req, res) => {
   try {
-    const { nomeCompleto, email, senha, tipo } = req.body;
+    const { id_professor, nome_turma, codigo_acesso } = req.body;
 
-    if (!nomeCompleto || !email || !senha || !tipo) {
-      return res.json({ success: false, message: 'Todos os campos são obrigatórios' });
+    console.log('=== CRIANDO TURMA ===');
+    console.log('ID Professor:', id_professor);
+    console.log('Nome da Turma:', nome_turma);
+    console.log('Código de Acesso:', codigo_acesso);
+
+    if (!id_professor || !nome_turma || !codigo_acesso) {
+      return res.json({ 
+        success: false, 
+        message: 'Todos os campos são obrigatórios' 
+      });
     }
 
-    const checkEmailQuery = 'SELECT email FROM Usuario WHERE email = ?';
-    db.query(checkEmailQuery, [email], async (err, results) => {
+    const checkProfessorQuery = 'SELECT id_professor FROM Professor WHERE id_professor = ?';
+    db.query(checkProfessorQuery, [id_professor], (err, results) => {
       if (err) {
-        console.error('Erro ao verificar email:', err);
-        return res.json({ success: false, message: 'Erro interno do servidor' });
-      }
-
-      if (results.length > 0) {
-        return res.json({ success: false, message: 'Email já cadastrado' });
-      }
-
-      try {
-        const hashedPassword = await bcrypt.hash(senha, 10);
-        
-        const tipoUsuario = tipo === 'profissional' ? 'Professor' : 'Aluno';
-
-        const insertUserQuery = 'INSERT INTO Usuario (nome, email, senha, tipo_usuario) VALUES (?, ?, ?, ?)';
-        db.query(insertUserQuery, [nomeCompleto, email, hashedPassword, tipoUsuario], (err, userResult) => {
-          if (err) {
-            console.error('Erro ao inserir usuário:', err);
-            return res.json({ success: false, message: 'Erro ao criar usuário' });
-          }
-
-          const userId = userResult.insertId;
-
-          if (tipoUsuario === 'Professor') {
-            const insertProfQuery = 'INSERT INTO Professor (id_usuario) VALUES (?)';
-            db.query(insertProfQuery, [userId], (err) => {
-              if (err) {
-                console.error('Erro ao inserir professor:', err);
-                return res.json({ success: false, message: 'Erro ao criar professor' });
-              }
-              res.json({ success: true, message: 'Cadastro realizado com sucesso!' });
-            });
-          } else {
-            const insertAlunoQuery = 'INSERT INTO Aluno (id_usuario) VALUES (?)';
-            db.query(insertAlunoQuery, [userId], (err) => {
-              if (err) {
-                console.error('Erro ao inserir aluno:', err);
-                return res.json({ success: false, message: 'Erro ao criar aluno' });
-              }
-              res.json({ success: true, message: 'Cadastro realizado com sucesso!' });
-            });
-          }
+        console.error('Erro ao verificar professor:', err);
+        return res.json({ 
+          success: false, 
+          message: 'Erro interno do servidor' 
         });
-      } catch (hashError) {
-        console.error('Erro ao criptografar senha:', hashError);
-        res.json({ success: false, message: 'Erro interno do servidor' });
       }
+
+      if (results.length === 0) {
+        console.log('Professor não encontrado com ID:', id_professor);
+        return res.json({ 
+          success: false, 
+          message: 'Professor não encontrado' 
+        });
+      }
+
+      const checkCodigoQuery = 'SELECT codigo_acesso FROM Turma WHERE codigo_acesso = ?';
+      db.query(checkCodigoQuery, [codigo_acesso], (err, codigoResults) => {
+        if (err) {
+          console.error('Erro ao verificar código:', err);
+          return res.json({ 
+            success: false, 
+            message: 'Erro interno do servidor' 
+          });
+        }
+
+        if (codigoResults.length > 0) {
+          return res.json({ 
+            success: false, 
+            message: 'Código de acesso já existe. Gere um novo código.' 
+          });
+        }
+
+        const insertTurmaQuery = 'INSERT INTO Turma (id_professor, nome_turma, codigo_acesso) VALUES (?, ?, ?)';
+        db.query(insertTurmaQuery, [id_professor, nome_turma, codigo_acesso], (err, result) => {
+          if (err) {
+            console.error('Erro ao inserir turma:', err);
+            return res.json({ 
+              success: false, 
+              message: 'Erro ao criar turma' 
+            });
+          }
+
+          console.log('Turma criada com sucesso! ID:', result.insertId);
+          res.json({
+            success: true,
+            message: 'Turma criada com sucesso!',
+            turma: {
+              id_turma: result.insertId,
+              id_professor: id_professor,
+              nome_turma: nome_turma,
+              codigo_acesso: codigo_acesso
+            }
+          });
+        });
+      });
     });
+
   } catch (error) {
-    console.error('Erro no cadastro:', error);
+    console.error('Erro ao criar turma:', error);
+    res.json({ 
+      success: false, 
+      message: 'Erro interno do servidor' 
+    });
+  }
+});
+
+app.post('/api/salvar-teste', (req, res) => {
+  try {
+    const { userId, scores } = req.body;
+   
+    console.log('=== SALVANDO TESTE VARK ===');
+    console.log('User ID:', userId);
+    console.log('Scores:', scores);
+
+    if (!userId || !scores) {
+      return res.json({ success: false, message: 'Dados incompletos' });
+    }
+
+    const categorias = [
+      { nome: 'visual', pontuacao: scores.V || 0 },
+      { nome: 'auditivo', pontuacao: scores.A || 0 },
+      { nome: 'leitura_escrita', pontuacao: scores.R || 0 },
+      { nome: 'cinestesico', pontuacao: scores.K || 0 }
+    ];
+   
+    const categoriaDominante = categorias.reduce((prev, current) =>
+      (prev.pontuacao > current.pontuacao) ? prev : current
+    );
+
+    console.log('Categoria dominante:', categoriaDominante);
+
+    const getCategoriaQuery = 'SELECT id_categoria FROM Categoria WHERE nome_categoria = ?';
+    db.query(getCategoriaQuery, [categoriaDominante.nome], (err, categoriaResults) => {
+      if (err) return res.json({ success: false, message: 'Erro ao buscar categoria' });
+      if (categoriaResults.length === 0) {
+        return res.json({ success: false, message: 'Categoria não encontrada' });
+      }
+
+      const idCategoria = categoriaResults[0].id_categoria;
+
+      const checkAlunoQuery = 'SELECT id_aluno FROM Aluno WHERE id_usuario = ?';
+      db.query(checkAlunoQuery, [userId], (err, alunoResults) => {
+        if (err) return res.json({ success: false, message: 'Erro interno' });
+        if (alunoResults.length === 0) {
+          return res.json({ success: false, message: 'Aluno não encontrado' });
+        }
+
+        const updateAlunoQuery = `
+          UPDATE Aluno
+          SET
+            id_categoria            = ?,
+            pontuacao_visual        = ?,
+            pontuacao_auditivo      = ?,
+            pontuacao_cinestesico   = ?,
+            pontuacao_leitura_escrita = ?,
+            teste_realizado         = TRUE
+          WHERE id_usuario = ?
+        `;
+
+        const valoresUpdate = [
+          idCategoria,
+          scores.V || 0,
+          scores.A || 0,
+          scores.K || 0,
+          scores.R || 0,
+          userId
+        ];
+
+        db.query(updateAlunoQuery, valoresUpdate, (err, updateResult) => {
+          if (err) {
+            console.error('Erro ao atualizar aluno:', err);
+            return res.json({
+              success: false,
+              message: 'Erro ao salvar resultados do teste'
+            });
+          }
+          if (updateResult.affectedRows === 0) {
+            return res.json({
+              success: false,
+              message: 'Nenhum registro foi atualizado'
+            });
+          }
+          res.json({
+            success: true,
+            message: 'Resultados do teste salvos com sucesso!',
+            categoria_dominante: categoriaDominante.nome,
+            pontuacoes: {
+              visual:    scores.V || 0,
+              auditivo:  scores.A || 0,
+              cinestesico: scores.K || 0,
+              leitura_escrita: scores.R || 0
+            }
+          });
+        });
+      });
+    });
+
+  } catch (error) {
+    console.error('Erro ao salvar teste:', error);
     res.json({ success: false, message: 'Erro interno do servidor' });
   }
 });
 
 app.listen(port, () => {
   console.log(`Servidor rodando na porta ${port}`);
+});
+
+
+app.get('/api/professor/:id_usuario', (req, res) => {
+  try {
+    const { id_usuario } = req.params;
+
+    console.log('=== BUSCANDO ID_PROFESSOR ===');
+    console.log('ID Usuario:', id_usuario);
+
+    if (!id_usuario) {
+      return res.json({ success: false, message: 'ID do usuário é obrigatório' });
+    }
+
+    const getProfessorQuery = 'SELECT id_professor FROM Professor WHERE id_usuario = ?';
+    db.query(getProfessorQuery, [id_usuario], (err, results) => {
+      if (err) {
+        console.error('Erro ao buscar professor:', err);
+        return res.json({ success: false, message: 'Erro interno do servidor' });
+      }
+
+      if (results.length === 0) {
+        console.log('Professor não encontrado para id_usuario:', id_usuario);
+        return res.json({ success: false, message: 'Professor não encontrado' });
+      }
+
+      const professor = results[0];
+      console.log('Professor encontrado:', professor);
+
+      res.json({
+        success: true,
+        id_professor: professor.id_professor,
+        message: 'Professor encontrado com sucesso'
+      });
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar professor:', error);
+    res.json({ success: false, message: 'Erro interno do servidor' });
+  }
 });
