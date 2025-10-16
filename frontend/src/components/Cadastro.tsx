@@ -10,6 +10,7 @@ export default function Cadastro() {
     tipo: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,7 +48,7 @@ export default function Cadastro() {
           nome: formData.nomeCompleto,
           email: formData.email,
           tipo: formData.tipo === 'estudante' ? 'Aluno' : 'Professor',
-          tipo_usuario: formData.tipo === 'estudante' ? 'Aluno' : 'Professor', // Adicione esta linha
+          tipo_usuario: formData.tipo === 'estudante' ? 'Aluno' : 'Professor',
           isLoggedIn: true,
           loginTime: new Date().toISOString()
         };
@@ -79,6 +80,10 @@ export default function Cadastro() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -144,7 +149,9 @@ export default function Cadastro() {
                 backgroundColor: 'white',
                 outline: 'none',
                 color: '#000',
-                transition: 'border-color 0.2s'
+                transition: 'border-color 0.2s',
+                width: '100%',
+                boxSizing: 'border-box'
               }}
             />
 
@@ -163,29 +170,58 @@ export default function Cadastro() {
                 backgroundColor: 'white',
                 outline: 'none',
                 color: '#000',
-                transition: 'border-color 0.2s'
+                transition: 'border-color 0.2s',
+                width: '100%',
+                boxSizing: 'border-box'
               }}
             />
 
-            <input
-              type="password"
-              name="senha"
-              placeholder="Senha"
-              value={formData.senha}
-              onChange={handleInputChange}
-              required
-              minLength={6}
-              style={{
-                padding: '12px 16px',
-                border: '2px solid #CED0FF',
-                borderRadius: '8px',
-                fontSize: '16px',
-                backgroundColor: 'white',
-                outline: 'none',
-                color: '#000',
-                transition: 'border-color 0.2s'
-              }}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="senha"
+                placeholder="Senha"
+                value={formData.senha}
+                onChange={handleInputChange}
+                required
+                minLength={6}
+                style={{
+                  padding: '12px 45px 12px 16px',
+                  border: '2px solid #CED0FF',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  backgroundColor: 'white',
+                  outline: 'none',
+                  color: '#000',
+                  transition: 'border-color 0.2s',
+                  width: '100%',
+                  boxSizing: 'border-box'
+                }}
+              />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#666',
+                  fontSize: '18px',
+                  padding: '4px',
+                  width: '30px',
+                  height: '30px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {showPassword ? '👁️' : '👁️‍🗨️'}
+              </button>
+            </div>
 
             <div style={{
               display: 'flex',
@@ -244,7 +280,9 @@ export default function Cadastro() {
                 cursor: isLoading ? 'not-allowed' : 'pointer',
                 marginTop: '20px',
                 transition: 'all 0.2s',
-                opacity: isLoading ? 0.7 : 1
+                opacity: isLoading ? 0.7 : 1,
+                width: '100%', 
+                minHeight: '48px' 
               }}
             >
               {isLoading ? 'Cadastrando...' : 'Cadastrar-se'}
@@ -252,19 +290,19 @@ export default function Cadastro() {
 
             <p style={{
               textAlign: 'center',
-              fontSize: '12px',
+              fontSize: '14px',
               color: '#666',
               marginTop: '15px'
             }}>
               Já possui uma conta? <Link to="/login" style={{
                 color: '#150B53',
-                textDecoration: 'none'
+                textDecoration: 'none',
+                fontWeight: '500'
               }}>Faça o login</Link>
             </p>
           </form>
         </div>
 
-        {/* Lado direito - Logo */}
         <div style={{
           flex: '1 1 300px',
           background: 'linear-gradient(135deg, #CED0FF 0%, #E8E9FF 100%)',
@@ -304,6 +342,21 @@ export default function Cadastro() {
           }}></div>
         </div>
       </div>
+
+      <style>
+        {`
+          /* Garantir que os placeholders sejam visíveis */
+          input::placeholder {
+            color: #666 !important;
+            opacity: 1 !important;
+          }
+          
+          /* Garantir que o texto digitado seja visível */
+          input {
+            color: #000 !important;
+          }
+        `}
+      </style>
     </div>
   );
 }

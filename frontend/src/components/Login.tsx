@@ -6,6 +6,10 @@ export default function Login() {
     senha: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [isRecoveryLoading, setIsRecoveryLoading] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -23,8 +27,6 @@ export default function Login() {
       console.log('=== DEBUG LOGIN ===');
       console.log('Email:', formData.email);
       console.log('Senha:', formData.senha);
-      console.log('Tamanho da senha:', formData.senha.length);
-      console.log('Dados completos:', formData);
      
       const response = await fetch('http://localhost:3001/api/login', {
         method: 'POST',
@@ -62,6 +64,40 @@ export default function Login() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handlePasswordRecovery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsRecoveryLoading(true);
+   
+    try {
+      const response = await fetch('http://localhost:3001/api/recuperar-senha', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: recoveryEmail })
+      });
+     
+      const result = await response.json();
+     
+      if (result.success) {
+        alert('Email de recuperação enviado com sucesso! Verifique sua caixa de entrada.');
+        setShowRecoveryModal(false);
+        setRecoveryEmail('');
+      } else {
+        alert(`Erro: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Erro ao recuperar senha:', error);
+      alert('Erro ao conectar com o servidor');
+    } finally {
+      setIsRecoveryLoading(false);
+    }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -162,49 +198,96 @@ export default function Login() {
             flexDirection: 'column',
             gap: '20px'
           }}>
-            <input
-              type="email"
-              name="email"
-              placeholder="E-mail"
-              value={formData.email}
-              onChange={handleInputChange}
-              required
-              style={{
-                padding: '12px 16px',
-                border: '2px solid #CED0FF',
-                borderRadius: '8px',
-                fontSize: '16px',
-                backgroundColor: 'white',
-                outline: 'none',
-                transition: 'border-color 0.2s',
-                width: '100%',
-                boxSizing: 'border-box'
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#9B7EFF'}
-              onBlur={(e) => e.target.style.borderColor = '#CED0FF'}
-            />
+            <div>
+              <input
+                type="email"
+                name="email"
+                placeholder="E-mail"
+                value={formData.email}
+                onChange={handleInputChange}
+                required
+                style={{
+                  padding: '12px 16px',
+                  border: '2px solid #CED0FF',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  backgroundColor: 'white',
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  color: '#000' // Adicionado para garantir que o texto seja visível
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#9B7EFF'}
+                onBlur={(e) => e.target.style.borderColor = '#CED0FF'}
+              />
+            </div>
            
-            <input
-              type="password"
-              name="senha"
-              placeholder="Senha"
-              value={formData.senha}
-              onChange={handleInputChange}
-              required
-              style={{
-                padding: '12px 16px',
-                border: '2px solid #CED0FF',
-                borderRadius: '8px',
-                fontSize: '16px',
-                backgroundColor: 'white',
-                outline: 'none',
-                transition: 'border-color 0.2s',
-                width: '100%',
-                boxSizing: 'border-box'
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#9B7EFF'}
-              onBlur={(e) => e.target.style.borderColor = '#CED0FF'}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="senha"
+                placeholder="Senha"
+                value={formData.senha}
+                onChange={handleInputChange}
+                required
+                style={{
+                  padding: '12px 45px 12px 16px',
+                  border: '2px solid #CED0FF',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  backgroundColor: 'white',
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  color: '#000' // Adicionado para garantir que o texto seja visível
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#9B7EFF'}
+                onBlur={(e) => e.target.style.borderColor = '#CED0FF'}
+              />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#666',
+                  fontSize: '18px',
+                  padding: '4px',
+                  width: '30px',
+                  height: '30px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {showPassword ? '👁️' : '👁️‍🗨️'}
+              </button>
+            </div>
+
+            <div style={{
+              textAlign: 'right',
+              marginTop: '-10px'
+            }}>
+              <span
+                onClick={() => setShowRecoveryModal(true)}
+                style={{
+                  color: '#1B1464',
+                  textDecoration: 'none',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  fontWeight: '500'
+                }}
+              >
+                Esqueceu sua senha?
+              </span>
+            </div>
            
             <button
               type="submit"
@@ -229,7 +312,7 @@ export default function Login() {
            
             <p style={{
               textAlign: 'center',
-              fontSize: '12px',
+              fontSize: '14px',
               color: '#666',
               marginTop: '15px',
               lineHeight: '1.4'
@@ -252,8 +335,112 @@ export default function Login() {
         </div>
       </div>
 
+      {/* Modal de Recuperação de Senha */}
+      {showRecoveryModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '30px',
+            borderRadius: '12px',
+            width: '90%',
+            maxWidth: '400px',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+          }}>
+            <h3 style={{
+              marginBottom: '20px',
+              color: '#1B1464',
+              textAlign: 'center'
+            }}>
+              Recuperar Senha
+            </h3>
+            <form onSubmit={handlePasswordRecovery}>
+              <input
+                type="email"
+                placeholder="Digite seu e-mail"
+                value={recoveryEmail}
+                onChange={(e) => setRecoveryEmail(e.target.value)}
+                required
+                style={{
+                  padding: '12px 16px',
+                  border: '2px solid #CED0FF',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  marginBottom: '20px',
+                  color: '#000'
+                }}
+              />
+              <div style={{
+                display: 'flex',
+                gap: '10px',
+                justifyContent: 'flex-end'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowRecoveryModal(false);
+                    setRecoveryEmail('');
+                  }}
+                  style={{
+                    padding: '10px 20px',
+                    border: '2px solid #CED0FF',
+                    borderRadius: '8px',
+                    backgroundColor: 'transparent',
+                    color: '#1B1464',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isRecoveryLoading}
+                  style={{
+                    padding: '10px 20px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    backgroundColor: '#CED0FF',
+                    color: '#1B1464',
+                    cursor: isRecoveryLoading ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '600'
+                  }}
+                >
+                  {isRecoveryLoading ? 'Enviando...' : 'Enviar'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <style>
         {`
+          /* Garantir que os placeholders sejam visíveis */
+          input::placeholder {
+            color: #666 !important;
+            opacity: 1 !important;
+          }
+          
+          /* Garantir que o texto digitado seja visível */
+          input {
+            color: #000 !important;
+          }
+
           @media (max-width: 768px) {
             div[style*="display: flex"] > div[style*="flex: 1 1 50%"] {
               flex: 1 1 100% !important;

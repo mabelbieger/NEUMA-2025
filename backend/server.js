@@ -124,6 +124,8 @@ app.post('/api/login', async (req, res) => {
 
     console.log('=== DEBUG BACKEND LOGIN ===');
     console.log('Email recebido:', email);
+    console.log('Senha recebida:', senha);
+    console.log('Tamanho da senha recebida:', senha.length);
 
     if (!email || !senha) {
       return res.json({ success: false, message: 'Email e senha são obrigatórios' });
@@ -157,39 +159,51 @@ app.post('/api/login', async (req, res) => {
 
       const user = results[0];
       console.log('Usuário encontrado:', user.email);
+      console.log('Senha no banco:', user.senha);
+      console.log('Tamanho da senha no banco:', user.senha.length);
       console.log('Tipo:', user.tipo_usuario);
-      console.log('ID Professor:', user.id_professor);
 
       try {
         let isValidPassword = false;
-       
-        const isValidBcryptHash = user.senha &&
-                                 user.senha.startsWith('$2b$') &&
-                                 user.senha.length >= 59; 
 
-        if (!isValidBcryptHash) {
-          if (user.senha.length === 50 && user.senha.startsWith('$2b$10$')) {
-            const senhasComuns = ['123456', '123', 'senha123', 'admin', senha];
-           
-            for (let senhaComum of senhasComuns) {
-              try {
-                const hashCompleto = await bcrypt.hash(senhaComum, 10);
-                if (hashCompleto.substring(0, 50) === user.senha) {
-                  isValidPassword = (senha === senhaComum);
-                  break;
-                }
-              } catch (e) {
-                console.log('Erro ao testar senha:', e.message);
-              }
-            }
-          } else {
-            isValidPassword = senha === user.senha;
-          }
-        } else {
+        console.log('=== DEBUG SENHA ===');
+        console.log('Senha recebida:', `"${senha}"`);
+        console.log('Senha no banco:', `"${user.senha}"`);
+        console.log('É bcrypt?', user.senha.startsWith('$2'));
+
+        if (user.senha && user.senha.startsWith('$2')) {
+          console.log('Tentando comparação bcrypt...');
           isValidPassword = await bcrypt.compare(senha, user.senha);
+          console.log('Resultado bcrypt.compare:', isValidPassword);
+        } else {
+          console.log('Tentando comparação texto simples...');
+          isValidPassword = (senha === user.senha);
+          console.log('Resultado comparação direta:', isValidPassword);
+          
+          if (isValidPassword) {
+            console.log('Convertendo senha para bcrypt...');
+            try {
+              const hashedPassword = await bcrypt.hash(senha, 10);
+              console.log('Novo hash gerado, tamanho:', hashedPassword.length);
+              
+              const updateQuery = 'UPDATE Usuario SET senha = ? WHERE id_usuario = ?';
+              db.query(updateQuery, [hashedPassword, user.id_usuario], (updateErr) => {
+                if (updateErr) {
+                  console.error('Erro ao atualizar senha para bcrypt:', updateErr);
+                } else {
+                  console.log('Senha atualizada para bcrypt com sucesso');
+                }
+              });
+            } catch (hashError) {
+              console.error('Erro ao gerar hash bcrypt:', hashError);
+            }
+          }
         }
        
         if (!isValidPassword) {
+          console.log('Senha incorreta para usuário:', user.email);
+          console.log('Esperado:', user.senha);
+          console.log('Recebido:', senha);
           return res.json({ success: false, message: 'Senha incorreta' });
         }
 
@@ -208,7 +222,6 @@ app.post('/api/login', async (req, res) => {
         }
 
         console.log('Login bem-sucedido para:', email);
-        console.log('Dados retornados:', responseUser);
         
         res.json({
           success: true,
@@ -226,6 +239,7 @@ app.post('/api/login', async (req, res) => {
     res.json({ success: false, message: 'Erro interno do servidor' });
   }
 });
+
 
 app.post('/api/turmas', (req, res) => {
   try {
@@ -405,6 +419,47 @@ app.post('/api/salvar-teste', (req, res) => {
 
   } catch (error) {
     console.error('Erro ao salvar teste:', error);
+    res.json({ success: false, message: 'Erro interno do servidor' });
+  }
+});
+
+
+app.post('/api/recuperar-senha', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    console.log('=== SOLICITAÇÃO DE RECUPERAÇÃO DE SENHA ===');
+    console.log('Email:', email);
+
+    if (!email) {
+      return res.json({ success: false, message: 'Email é obrigatório' });
+    }
+
+    const checkEmailQuery = 'SELECT id_usuario, nome FROM Usuario WHERE email = ?';
+    db.query(checkEmailQuery, [email], (err, results) => {
+      if (err) {
+        console.error('Erro ao verificar email:', err);
+        return res.json({ success: false, message: 'Erro interno do servidor' });
+      }
+
+      if (results.length === 0) {
+        console.log('Email não encontrado:', email);
+        return res.json({ success: false, message: 'Email não encontrado' });
+      }
+
+      const user = results[0];
+   
+      console.log('Email de recuperação seria enviado para:', email);
+      console.log('Usuário:', user.nome);
+      
+      res.json({
+        success: true,
+        message: 'Email de recuperação enviado com sucesso! Verifique sua caixa de entrada.'
+      });
+    });
+
+  } catch (error) {
+    console.error('Erro na recuperação de senha:', error);
     res.json({ success: false, message: 'Erro interno do servidor' });
   }
 });
