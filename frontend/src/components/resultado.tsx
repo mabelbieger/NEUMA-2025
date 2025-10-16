@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, Headphones, BookOpen, Hand, RotateCcw, Download, Share2, Home } from 'lucide-react';
 
-
 interface ResultadoProps {
   scores: {
     V: number;
@@ -13,7 +12,6 @@ interface ResultadoProps {
   onRestart: () => void;
   onBackToHome: () => void;
 }
-
 
 export default function Resultado({ scores, onRestart, onBackToHome }: ResultadoProps) {
   const [isSaving, setIsSaving] = useState(false);
@@ -70,12 +68,33 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
     }
   };
 
+  const saveUserLearningStyle = () => {
+    const loggedUserData = localStorage.getItem('loggedUser');
+    if (loggedUserData) {
+      const user = JSON.parse(loggedUserData);
+      const dominantStyle = getDominantStyle()[0];
+      const primaryStyle = getStyleInfo(dominantStyle.code);
+      
+      const updatedUser = {
+        ...user,
+        learningStyle: dominantStyle.code, 
+        learningStyleName: primaryStyle.name,
+        testCompleted: true,
+        scores: scores 
+      };
+      localStorage.setItem('loggedUser', JSON.stringify(updatedUser));
+      console.log('Estilo de aprendizagem salvo no localStorage:', dominantStyle.code);
+    }
+  };
+
   useEffect(() => {
     const loggedUserData = localStorage.getItem('loggedUser');
     if (loggedUserData) {
       const user = JSON.parse(loggedUserData);
       if (user.tipo === 'Aluno') {
-        saveResultsToDatabase();
+        saveResultsToDatabase().then(() => {
+          saveUserLearningStyle(); 
+        });
       }
     }
   }, []);
@@ -196,9 +215,13 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
 
   const primaryStyle = getStyleInfo(dominantStyle.code);
 
+  const handleNavigateToPersonalized = () => {
+    saveUserLearningStyle();
+    navigate('/personalizada');
+  };
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
-      {/* Header */}
       <header style={{ backgroundColor: '#150B53', padding: '1.5rem 0' }}>
         <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '0 1rem', textAlign: 'center' }}>
           <img
@@ -583,7 +606,7 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
                   cursor: 'pointer',
                   transition: 'all 0.2s'
                 }}
-                onClick={() => navigate('/personalizada')}
+                onClick={handleNavigateToPersonalized}
                 onMouseOver={(e) => {
                   e.currentTarget.style.backgroundColor = '#f8fafc';
                 }}

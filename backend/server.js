@@ -44,6 +44,12 @@ app.post('/api/cadastro', async (req, res) => {
       return res.json({ success: false, message: 'Todos os campos são obrigatórios' });
     }
 
+    console.log('=== DEBUG CADASTRO ===');
+    console.log('Nome:', nomeUsuario);
+    console.log('Email:', email);
+    console.log('Senha (plain):', senha);
+    console.log('Tipo:', tipoUsuario);
+
     const checkEmailQuery = 'SELECT email FROM Usuario WHERE email = ?';
     db.query(checkEmailQuery, [email], async (err, results) => {
       if (err) {
@@ -57,6 +63,7 @@ app.post('/api/cadastro', async (req, res) => {
 
       try {
         const hashedPassword = await bcrypt.hash(senha, 10);
+        console.log('Senha hash gerada, tamanho:', hashedPassword.length);
 
         const insertUserQuery = 'INSERT INTO Usuario (nome, email, senha, tipo_usuario) VALUES (?, ?, ?, ?)';
         db.query(insertUserQuery, [nomeUsuario, email, hashedPassword, tipoUsuario], (err, userResult) => {
@@ -80,7 +87,7 @@ app.post('/api/cadastro', async (req, res) => {
                 message: 'Cadastro realizado com sucesso!',
                 user: {
                   id: userId,
-                  id_professor: profResult.insertId, // ID da tabela Professor
+                  id_professor: profResult.insertId,
                   nome: nomeUsuario,
                   email: email,
                   tipo: tipoUsuario

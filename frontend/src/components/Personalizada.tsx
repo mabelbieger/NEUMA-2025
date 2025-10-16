@@ -1,18 +1,284 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-export default function Visual() {
-  const [selectedContent, setSelectedContent] = useState(null);
+interface UserData {
+  id: number;
+  nome: string;
+  email: string;
+  tipo: string;
+  learningStyle?: string;
+  learningStyleName?: string;
+  testCompleted?: boolean;
+}
+
+interface LearningStyleInfo {
+  name: string;
+  icon: string;
+  color: string;
+  bgColor: string;
+  textColor: string;
+  borderColor: string;
+  description: string;
+  generalTips: string[];
+  mathTips: string[];
+  activities: ContentActivity[];
+}
+
+interface ContentActivity {
+  id: string;
+  title: string;
+  type: string;
+  resources: ActivityResource[];
+}
+
+interface ActivityResource {
+  type: 'image' | 'video' | 'text' | 'interactive' | 'audio';
+  title: string;
+  content: string;
+  url?: string;
+}
+
+export default function PaginaPersonalizada() {
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [learningStyle, setLearningStyle] = useState<LearningStyleInfo | null>(null);
+  const [selectedContent, setSelectedContent] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  const learningStyles: { [key: string]: LearningStyleInfo } = {
+    V: {
+      name: 'Visual',
+      icon: '👁️',
+      color: '#dc2626',
+      bgColor: '#fef2f2',
+      textColor: '#991b1b',
+      borderColor: '#fecaca',
+      description: 'Você aprende melhor através de elementos visuais como imagens, gráficos e cores',
+      generalTips: [
+        'Use gráficos, diagramas e mapas mentais',
+        'Destaque informações importantes com cores',
+        'Assista a vídeos educativos',
+        'Use flashcards com imagens',
+        'Crie linhas do tempo visuais'
+      ],
+      mathTips: [
+        'Visualize problemas através de desenhos',
+        'Use representações geométricas',
+        'Crie esquemas coloridos para fórmulas',
+        'Utilize software de geometria dinâmica'
+      ],
+      activities: [
+        {
+          id: 'circunferencia',
+          title: '⭕ Circunferência',
+          type: 'matematica',
+          resources: [
+            {
+              type: 'image',
+              title: 'Mapa Mental da Circunferência',
+              content: 'Visualize os conceitos principais através de um mapa mental',
+              url: '/imagens/mapaMentalNeuma.png'
+            },
+            {
+              type: 'video',
+              title: 'Vídeo Explicativo - Circunferência',
+              content: 'Assista a uma explicação visual sobre circunferência e seus elementos'
+            },
+            {
+              type: 'interactive',
+              title: 'Construa sua Circunferência',
+              content: 'Use ferramentas interativas para criar e explorar circunferências'
+            }
+          ]
+        },
+        {
+          id: 'algebra',
+          title: '📐 Álgebra Básica',
+          type: 'matematica',
+          resources: [
+            {
+              type: 'image',
+              title: 'Gráficos de Funções',
+              content: 'Visualize funções algébricas através de gráficos coloridos'
+            },
+            {
+              type: 'interactive',
+              title: 'Resolva Equações Visualmente',
+              content: 'Use balanças visuais para entender equações'
+            }
+          ]
+        }
+      ]
+    },
+    A: {
+      name: 'Auditivo',
+      icon: '🎧',
+      color: '#2563eb',
+      bgColor: '#eff6ff',
+      textColor: '#1d4ed8',
+      borderColor: '#bfdbfe',
+      description: 'Você aprende melhor ouvindo e discutindo conteúdos',
+      generalTips: [
+        'Participe de discussões em grupo',
+        'Grave áudios para revisar conteúdo',
+        'Leia em voz alta',
+        'Use podcasts educativos',
+        'Explique conceitos para outras pessoas'
+      ],
+      mathTips: [
+        'Explique problemas matemáticos em voz alta',
+        'Participe de grupos de estudo',
+        'Use apps com explicações em áudio',
+        'Grave suas próprias explicações'
+      ],
+      activities: [
+        {
+          id: 'circunferencia',
+          title: '⭕ Circunferência',
+          type: 'matematica',
+          resources: [
+            {
+              type: 'audio',
+              title: 'Áudio Explicativo',
+              content: 'Ouça uma explicação detalhada sobre circunferência'
+            },
+            {
+              type: 'interactive',
+              title: 'Discussão em Grupo',
+              content: 'Participe de uma discussão sobre os conceitos'
+            }
+          ]
+        }
+      ]
+    },
+    R: {
+      name: 'Leitura/Escrita',
+      icon: '📖',
+      color: '#16a34a',
+      bgColor: '#f0fdf4',
+      textColor: '#15803d',
+      borderColor: '#bbf7d0',
+      description: 'Você aprende melhor lendo e escrevendo',
+      generalTips: [
+        'Faça anotações detalhadas',
+        'Reescreva conceitos com suas palavras',
+        'Use listas e resumos',
+        'Mantenha um diário de estudos',
+        'Leia textos complementares'
+      ],
+      mathTips: [
+        'Escreva os passos de resolução detalhadamente',
+        'Crie resumos de fórmulas e conceitos',
+        'Faça listas de exercícios organizadas',
+        'Anote definições importantes'
+      ],
+      activities: [
+        {
+          id: 'circunferencia',
+          title: '⭕ Circunferência',
+          type: 'matematica',
+          resources: [
+            {
+              type: 'text',
+              title: 'Texto Explicativo Completo',
+              content: 'Leia uma explicação detalhada sobre circunferência...'
+            },
+            {
+              type: 'interactive',
+              title: 'Exercícios de Escrita',
+              content: 'Descreva os conceitos com suas próprias palavras'
+            }
+          ]
+        }
+      ]
+    },
+    K: {
+      name: 'Cinestésico',
+      icon: '✋',
+      color: '#9333ea',
+      bgColor: '#faf5ff',
+      textColor: '#7c3aed',
+      borderColor: '#d8b4fe',
+      description: 'Você aprende melhor através da prática e movimento',
+      generalTips: [
+        'Pratique com experimentos hands-on',
+        'Use objetos físicos para aprender',
+        'Faça pausas regulares durante o estudo',
+        'Associe movimentos a conceitos',
+        'Prefira atividades interativas'
+      ],
+      mathTips: [
+        'Use materiais manipuláveis',
+        'Resolva muitos exercícios práticos',
+        'Crie modelos físicos',
+        'Pratique em ambientes diferentes'
+      ],
+      activities: [
+        {
+          id: 'circunferencia',
+          title: '⭕ Circunferência',
+          type: 'matematica',
+          resources: [
+            {
+              type: 'interactive',
+              title: 'Construa uma Circunferência Física',
+              content: 'Use compasso e outros materiais para criar circunferências'
+            },
+            {
+              type: 'interactive',
+              title: 'Atividade Prática',
+              content: 'Meça circunferências de objetos reais'
+            }
+          ]
+        }
+      ]
+    }
+  };
+
+  useEffect(() => {
+    const loggedUserData = localStorage.getItem('loggedUser');
+    if (loggedUserData) {
+      const user = JSON.parse(loggedUserData);
+      setUserData(user);
+      
+      if (user.learningStyle && learningStyles[user.learningStyle]) {
+        setLearningStyle(learningStyles[user.learningStyle]);
+      } else {
+        navigate('/teste');
+      }
+    } else {
+      navigate('/login');
+    }
+  }, [navigate]);
 
   const handleBackToHome = () => {
-    console.log('Navigate back to home');
+    navigate('/home');
   };
 
-  const handleContentClick = (content) => {
-    setSelectedContent(selectedContent === content ? null : content);
+  const handleContentClick = (contentId: string) => {
+    setSelectedContent(selectedContent === contentId ? null : contentId);
   };
+
+  const handleBackToTest = () => {
+    navigate('/teste');
+  };
+
+  if (!userData || !learningStyle) {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        backgroundColor: '#f9fafb',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
+        <div>Carregando...</div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+      {/* Header */}
       <header style={{ backgroundColor: '#150B53', padding: '1.5rem 0' }}>
         <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '0 1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -39,7 +305,7 @@ export default function Visual() {
               textAlign: 'center',
               flex: 1
             }}>
-              Sistema Visual
+              {learningStyle.icon} {learningStyle.name}
             </h1>
 
             <div>
@@ -61,32 +327,52 @@ export default function Visual() {
         <div style={{ maxWidth: '64rem', margin: '0 auto' }}>
           
           <div style={{
-            backgroundColor: '#CED0FF',
+            backgroundColor: learningStyle.bgColor,
+            border: `2px solid ${learningStyle.borderColor}`,
             borderRadius: '0.75rem',
             padding: '1.5rem',
             marginBottom: '2rem',
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
           }}>
             <div style={{
-              backgroundColor: '#150B53',
-              color: 'white',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '0.5rem',
-              fontSize: '1.5rem',
-              fontWeight: 'bold',
-              textAlign: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
               marginBottom: '1rem'
             }}>
-              Turma 63 1
+              <h2 style={{
+                color: learningStyle.textColor,
+                fontSize: '1.5rem',
+                fontWeight: 'bold',
+                margin: 0
+              }}>
+                Bem-vindo, {userData.nome}!
+              </h2>
+              
+              <button
+                onClick={handleBackToTest}
+                style={{
+                  backgroundColor: learningStyle.color,
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  padding: '0.5rem 1rem',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500'
+                }}
+              >
+                Refazer Teste
+              </button>
             </div>
             
             <p style={{
-              color: '#374151',
-              textAlign: 'center',
+              color: learningStyle.textColor,
               margin: 0,
-              fontSize: '1rem'
+              fontSize: '1rem',
+              lineHeight: '1.5'
             }}>
-              Sistema Sensorial: <strong>Visual</strong>
+              {learningStyle.description}
             </p>
           </div>
 
@@ -104,7 +390,7 @@ export default function Visual() {
               fontWeight: 'bold',
               marginBottom: '1rem'
             }}>
-              📊 Aprendizagem Visual
+              🎯 Seu Perfil de Aprendizagem
             </h2>
             
             <p style={{
@@ -114,8 +400,8 @@ export default function Visual() {
               maxWidth: '48rem',
               margin: '0 auto'
             }}>
-              Você aprende melhor através de <strong>imagens, gráficos e elementos visuais</strong>. 
-              Prefere materiais organizados visualmente com cores e diagramas.
+              Sua página foi personalizada para o estilo <strong>{learningStyle.name.toLowerCase()}</strong>. 
+              Aqui você encontrará recursos e atividades que se alinham com sua forma preferida de aprender.
             </p>
           </div>
 
@@ -133,7 +419,7 @@ export default function Visual() {
               marginBottom: '1.5rem',
               textAlign: 'center'
             }}>
-              📚 Atividades por Conteúdo
+              📚 Conteúdos Personalizados
             </h3>
 
             <div style={{
@@ -141,167 +427,141 @@ export default function Visual() {
               flexDirection: 'column',
               gap: '1rem'
             }}>
-              <button
-                onClick={() => handleContentClick('circunferencia')}
-                style={{
-                  backgroundColor: selectedContent === 'circunferencia' ? '#150B53' : '#CED0FF',
-                  color: selectedContent === 'circunferencia' ? 'white' : '#150B53',
-                  border: 'none',
-                  borderRadius: '0.75rem',
-                  padding: '1.5rem',
-                  cursor: 'pointer',
-                  fontSize: '1.25rem',
-                  fontWeight: 'bold',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-                }}
-                onMouseEnter={(e) => {
-                  if (selectedContent !== 'circunferencia') {
-                    e.target.style.backgroundColor = '#150B53';
-                    e.target.style.color = 'white';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (selectedContent !== 'circunferencia') {
-                    e.target.style.backgroundColor = '#CED0FF';
-                    e.target.style.color = '#150B53';
-                  }
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <span style={{ marginRight: '0.75rem' }}>⭕</span>
-                  Circunferência
-                </div>
-                <span style={{ 
-                  transform: selectedContent === 'circunferencia' ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.3s ease'
-                }}>
-                  ▼
-                </span>
-              </button>
-
-              {selectedContent === 'circunferencia' && (
-                <div style={{
-                  backgroundColor: '#f8fafc',
-                  borderRadius: '0.75rem',
-                  padding: '2rem',
-                  border: '2px solid #CED0FF',
-                  animation: 'fadeIn 0.3s ease-in'
-                }}>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                    gap: '2rem'
-                  }}>
-                    {/* Mind Map */}
-                    <div style={{
-                      backgroundColor: 'white',
-                      padding: '1.5rem',
+              {learningStyle.activities.map((activity) => (
+                <div key={activity.id}>
+                  <button
+                    onClick={() => handleContentClick(activity.id)}
+                    style={{
+                      backgroundColor: selectedContent === activity.id ? learningStyle.color : learningStyle.bgColor,
+                      color: selectedContent === activity.id ? 'white' : learningStyle.textColor,
+                      border: `2px solid ${learningStyle.borderColor}`,
                       borderRadius: '0.75rem',
-                      textAlign: 'center',
-                      border: '2px solid #CED0FF'
-                    }}>
-                      <img 
-                        src="/imagens/mapaMentalNeuma.png" 
-                        alt="Mapa Mental da Circunferência"
-                        style={{
-                          width: '100%',
-                          maxWidth: '280px',
-                          height: 'auto'
-                        }}
-                      />
-                    </div>
-
-                    {/* Text Content */}
-                    <div style={{
-                      backgroundColor: 'white',
                       padding: '1.5rem',
-                      borderRadius: '0.75rem',
-                      textAlign: 'left',
-                      fontSize: '0.9rem',
-                      lineHeight: '1.6',
-                      color: '#374151',
-                      border: '2px solid #CED0FF'
-                    }}>
-                      <p><strong>A circunferência</strong> é o conjunto de todos os pontos de um plano que estão a uma distância fixa de um ponto chamado <strong>centro</strong>. Essa distância constante é denominada <strong>raio</strong>.</p>
-                      
-                      <p>Em outras palavras, se marcarmos um ponto no plano (o centro) e traçarmos uma linha com comprimento fixo em todas as direções, o caminho formado será uma circunferência. É a base para muitos estudos geométricos, além de ter diversas aplicações práticas no cotidiano.</p>
-
-                      <p><strong>Elementos da Circunferência</strong></p>
-                      <ul style={{ paddingLeft: '1.2rem' }}>
-                        <li><strong>Centro</strong>: ponto fixo que serve de referência para todos os demais da circunferência.</li>
-                        <li><strong>Raio</strong>: segmento que liga o centro a qualquer ponto da circunferência. É a medida que define o "tamanho" da circunferência.</li>
-                        <li><strong>Diâmetro</strong>: segmento que liga dois pontos da circunferência passando pelo centro. O diâmetro é sempre o dobro do raio.</li>
-                        <li><strong>Corda</strong>: segmento de reta que une dois pontos da circunferência, sem a necessidade de passar pelo centro.</li>
-                        <li><strong>Arco</strong>: cada parte da circunferência compreendida entre dois pontos. Pode ser classificado como arco menor, arco maior ou semicircunferência, dependendo da extensão.</li>
-                      </ul>
-
-                      <p><strong>Comprimento da circunferência</strong>: corresponde à medida do seu contorno e pode ser calculado pela fórmula C=2πr ou C=πd onde r é o raio e d o diâmetro.</p>
-
-                      <p><strong>Diferença entre Circunferência e Círculo</strong></p>
-                      <p>Um erro comum é confundir circunferência com círculo. A circunferência corresponde apenas à <strong>linha curva fechada</strong> que delimita a figura. Já o círculo é a <strong>região interna</strong> delimitada pela circunferência.</p>
-
-                      <p><strong>Importância e Aplicações</strong></p>
-                      <p>A circunferência não está presente apenas na matemática abstrata, mas também no mundo real. Relógios, rodas, moedas, pratos, campos esportivos e até construções arquitetônicas utilizam seus princípios. Além disso, o estudo das circunferências é essencial em áreas como a <strong>trigonometria</strong>, a <strong>física</strong> (movimentos circulares, engrenagens, órbitas) e a <strong>engenharia</strong>.</p>
+                      cursor: 'pointer',
+                      fontSize: '1.25rem',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      transition: 'all 0.3s ease',
+                      width: '100%',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <span style={{ marginRight: '0.75rem' }}>{activity.title.split(' ')[0]}</span>
+                      {activity.title.split(' ').slice(1).join(' ')}
                     </div>
-                  </div>
+                    <span style={{ 
+                      transform: selectedContent === activity.id ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.3s ease'
+                    }}>
+                      ▼
+                    </span>
+                  </button>
+
+                  {selectedContent === activity.id && (
+                    <div style={{
+                      backgroundColor: learningStyle.bgColor,
+                      borderRadius: '0.75rem',
+                      padding: '2rem',
+                      border: `2px solid ${learningStyle.borderColor}`,
+                      marginTop: '0.5rem',
+                      animation: 'fadeIn 0.3s ease-in'
+                    }}>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                        gap: '2rem'
+                      }}>
+                        {activity.resources.map((resource, index) => (
+                          <div key={index} style={{
+                            backgroundColor: 'white',
+                            padding: '1.5rem',
+                            borderRadius: '0.75rem',
+                            border: `1px solid ${learningStyle.borderColor}`
+                          }}>
+                            <h4 style={{
+                              color: learningStyle.textColor,
+                              fontSize: '1.125rem',
+                              fontWeight: 'bold',
+                              marginBottom: '0.5rem'
+                            }}>
+                              {getResourceIcon(resource.type)} {resource.title}
+                            </h4>
+                            <p style={{
+                              color: '#374151',
+                              fontSize: '0.9rem',
+                              lineHeight: '1.5',
+                              margin: 0
+                            }}>
+                              {resource.content}
+                            </p>
+                            {resource.url && (
+                              <div style={{ marginTop: '1rem' }}>
+                                <img 
+                                  src={resource.url} 
+                                  alt={resource.title}
+                                  style={{
+                                    width: '100%',
+                                    maxWidth: '280px',
+                                    height: 'auto',
+                                    borderRadius: '0.5rem'
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
           </div>
 
           <div style={{
-            backgroundColor: '#150B53',
+            backgroundColor: learningStyle.color,
             color: 'white',
             borderRadius: '0.75rem',
             padding: '2rem',
-            textAlign: 'center'
+            marginBottom: '2rem'
           }}>
             <h3 style={{
               fontSize: '1.5rem',
               fontWeight: 'bold',
-              marginBottom: '1.5rem'
+              marginBottom: '1.5rem',
+              textAlign: 'center'
             }}>
-              💡 Dicas para Aprendizes Visuais
+              💡 Dicas para {learningStyle.name}
             </h3>
             
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '1rem',
-              marginTop: '1.5rem'
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '1rem'
             }}>
-              <div style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                padding: '1rem',
-                borderRadius: '0.5rem'
-              }}>
-                <p style={{ margin: 0, fontSize: '0.9rem' }}>
-                  📊 Use gráficos e diagramas
-                </p>
+              <div>
+                <h4 style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>Dicas Gerais</h4>
+                <ul style={{ paddingLeft: '1.2rem', margin: 0 }}>
+                  {learningStyle.generalTips.slice(0, 3).map((tip, index) => (
+                    <li key={index} style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                      {tip}
+                    </li>
+                  ))}
+                </ul>
               </div>
               
-              <div style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                padding: '1rem',
-                borderRadius: '0.5rem'
-              }}>
-                <p style={{ margin: 0, fontSize: '0.9rem' }}>
-                  🎨 Destaque com cores
-                </p>
-              </div>
-              
-              <div style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                padding: '1rem',
-                borderRadius: '0.5rem'
-              }}>
-                <p style={{ margin: 0, fontSize: '0.9rem' }}>
-                  🧠 Crie mapas mentais
-                </p>
+              <div>
+                <h4 style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>Para Matemática</h4>
+                <ul style={{ paddingLeft: '1.2rem', margin: 0 }}>
+                  {learningStyle.mathTips.slice(0, 3).map((tip, index) => (
+                    <li key={index} style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                      {tip}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
           </div>
@@ -316,4 +576,15 @@ export default function Visual() {
       `}</style>
     </div>
   );
+}
+
+function getResourceIcon(type: string): string {
+  const icons = {
+    image: '🖼️',
+    video: '🎥',
+    text: '📝',
+    interactive: '🔄',
+    audio: '🔊'
+  };
+  return icons[type] || '📄';
 }

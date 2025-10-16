@@ -27,7 +27,6 @@ export default function MinhasTurmas() {
   }, []);
 
   const carregarTurmas = () => {
-    // Simulando dados com a turma 63 1 já criada
     const turmasSimuladas = [
       {
         id: 63,

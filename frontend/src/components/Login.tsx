@@ -27,6 +27,8 @@ export default function Login() {
       console.log('=== DEBUG LOGIN ===');
       console.log('Email:', formData.email);
       console.log('Senha:', formData.senha);
+      console.log('Tamanho da senha:', formData.senha.length);
+      console.log('Dados completos:', formData);
      
       const response = await fetch('http://localhost:3001/api/login', {
         method: 'POST',
@@ -48,7 +50,6 @@ export default function Login() {
        
         alert('Login realizado com sucesso!');
         
-        // Redirecionar baseado no tipo de usuário
         if (result.user && result.user.tipo_usuario === 'Professor') {
           window.location.href = '/home-professor';
         } else {
@@ -198,30 +199,27 @@ export default function Login() {
             flexDirection: 'column',
             gap: '20px'
           }}>
-            <div>
-              <input
-                type="email"
-                name="email"
-                placeholder="E-mail"
-                value={formData.email}
-                onChange={handleInputChange}
-                required
-                style={{
-                  padding: '12px 16px',
-                  border: '2px solid #CED0FF',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  backgroundColor: 'white',
-                  outline: 'none',
-                  transition: 'border-color 0.2s',
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  color: '#000' // Adicionado para garantir que o texto seja visível
-                }}
-                onFocus={(e) => e.target.style.borderColor = '#9B7EFF'}
-                onBlur={(e) => e.target.style.borderColor = '#CED0FF'}
-              />
-            </div>
+            <input
+              type="email"
+              name="email"
+              placeholder="E-mail"
+              value={formData.email}
+              onChange={handleInputChange}
+              required
+              style={{
+                padding: '12px 16px',
+                border: '2px solid #CED0FF',
+                borderRadius: '8px',
+                fontSize: '16px',
+                backgroundColor: 'white',
+                outline: 'none',
+                transition: 'border-color 0.2s',
+                width: '100%',
+                boxSizing: 'border-box'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#9B7EFF'}
+              onBlur={(e) => e.target.style.borderColor = '#CED0FF'}
+            />
            
             <div style={{ position: 'relative' }}>
               <input
@@ -240,8 +238,7 @@ export default function Login() {
                   outline: 'none',
                   transition: 'border-color 0.2s',
                   width: '100%',
-                  boxSizing: 'border-box',
-                  color: '#000' // Adicionado para garantir que o texto seja visível
+                  boxSizing: 'border-box'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#9B7EFF'}
                 onBlur={(e) => e.target.style.borderColor = '#CED0FF'}
@@ -258,13 +255,8 @@ export default function Login() {
                   border: 'none',
                   cursor: 'pointer',
                   color: '#666',
-                  fontSize: '18px',
-                  padding: '4px',
-                  width: '30px',
-                  height: '30px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
+                  fontSize: '16px',
+                  padding: '4px'
                 }}
               >
                 {showPassword ? '👁️' : '👁️‍🗨️'}
@@ -312,7 +304,7 @@ export default function Login() {
            
             <p style={{
               textAlign: 'center',
-              fontSize: '14px',
+              fontSize: '12px',
               color: '#666',
               marginTop: '15px',
               lineHeight: '1.4'
@@ -335,7 +327,6 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Modal de Recuperação de Senha */}
       {showRecoveryModal && (
         <div style={{
           position: 'fixed',
@@ -378,8 +369,7 @@ export default function Login() {
                   fontSize: '16px',
                   width: '100%',
                   boxSizing: 'border-box',
-                  marginBottom: '20px',
-                  color: '#000'
+                  marginBottom: '20px'
                 }}
               />
               <div style={{
@@ -400,8 +390,7 @@ export default function Login() {
                     backgroundColor: 'transparent',
                     color: '#1B1464',
                     cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500'
+                    fontSize: '14px'
                   }}
                 >
                   Cancelar
@@ -430,17 +419,6 @@ export default function Login() {
 
       <style>
         {`
-          /* Garantir que os placeholders sejam visíveis */
-          input::placeholder {
-            color: #666 !important;
-            opacity: 1 !important;
-          }
-          
-          /* Garantir que o texto digitado seja visível */
-          input {
-            color: #000 !important;
-          }
-
           @media (max-width: 768px) {
             div[style*="display: flex"] > div[style*="flex: 1 1 50%"] {
               flex: 1 1 100% !important;
