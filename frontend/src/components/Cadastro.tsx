@@ -47,8 +47,9 @@ export default function Cadastro() {
           id: result.user.id,
           nome: formData.nomeCompleto,
           email: formData.email,
-          tipo: formData.tipo === 'estudante' ? 'Aluno' : 'Professor',
-          tipo_usuario: formData.tipo === 'estudante' ? 'Aluno' : 'Professor',
+          tipo: formData.tipo === 'profissional' ? 'Professor' : 'Aluno',
+        tipo_usuario: formData.tipo === 'profissional' ? 'Professor' : 'Aluno',
+        ...(result.user.id_professor && { id_professor: result.user.id_professor }),
           isLoggedIn: true,
           loginTime: new Date().toISOString()
         };
@@ -65,12 +66,12 @@ export default function Cadastro() {
           tipo: ''
         });
        
-        // Redirecionar baseado no tipo de usuário
-        if (formData.tipo === 'profissional') {
-          navigate('/home-professor');
-        } else {
-          navigate('/home');
-        }
+              // Redirecionar baseado no tipo de usuário
+      if (formData.tipo === 'profissional') {
+        window.location.href = '/home-professor';
+      } else {
+        window.location.href = '/home';
+      }
       } else {
         alert(`Erro: ${result.message}`);
       }

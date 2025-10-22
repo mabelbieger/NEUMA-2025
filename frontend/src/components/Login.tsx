@@ -49,9 +49,14 @@ export default function Login() {
         alert('Login realizado com sucesso!');
         
         // Redirecionar baseado no tipo de usuário
-        if (result.user && result.user.tipo_usuario === 'Professor') {
+        const tipoUsuario = result.user?.tipo_usuario || result.user?.tipo || '';
+        console.log('Tipo de usuário detectado:', tipoUsuario);
+        
+        if (tipoUsuario === 'Professor') {
+          console.log('Redirecionando para /home-professor');
           window.location.href = '/home-professor';
         } else {
+          console.log('Redirecionando para /home');
           window.location.href = '/home';
         }
       } else {

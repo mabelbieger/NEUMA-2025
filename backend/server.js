@@ -80,10 +80,11 @@ app.post('/api/cadastro', async (req, res) => {
                 message: 'Cadastro realizado com sucesso!',
                 user: {
                   id: userId,
-                  id_professor: profResult.insertId, // ID da tabela Professor
+                  id_professor: profResult.insertId,
                   nome: nomeUsuario,
                   email: email,
-                  tipo: tipoUsuario
+                  tipo: tipoUsuario,
+                  tipo_usuario: tipoUsuario
                 }
               });
             });
@@ -101,7 +102,8 @@ app.post('/api/cadastro', async (req, res) => {
                   id: userId,
                   nome: nomeUsuario,
                   email: email,
-                  tipo: tipoUsuario
+                  tipo: tipoUsuario,
+                  tipo_usuario: tipoUsuario
                 }
               });
             });
@@ -207,11 +209,13 @@ app.post('/api/login', async (req, res) => {
           return res.json({ success: false, message: 'Senha incorreta' });
         }
 
+        // ====== CORREÇÃO APLICADA AQUI ======
         const responseUser = {
           id: user.id_usuario,
           nome: user.nome,
           email: user.email,
-          tipo: user.tipo_usuario
+          tipo: user.tipo_usuario,
+          tipo_usuario: user.tipo_usuario  // ← LINHA ADICIONADA
         };
 
         if (user.tipo_usuario === 'Professor' && user.id_professor) {
@@ -222,6 +226,7 @@ app.post('/api/login', async (req, res) => {
         }
 
         console.log('Login bem-sucedido para:', email);
+        console.log('Dados do usuário retornados:', responseUser);  // ← LOG ADICIONADO
         
         res.json({
           success: true,
@@ -464,10 +469,177 @@ app.post('/api/recuperar-senha', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Servidor rodando na porta ${port}`);
+app.get('/api/turmas/professor/:id_professor', (req, res) => {
+  try {
+    const { id_professor } = req.params;
+
+    console.log('=== LISTANDO TURMAS DO PROFESSOR ===');
+    console.log('ID Professor:', id_professor);
+
+    if (!id_professor) {
+      return res.json({ 
+        success: false, 
+        message: 'ID do professor é obrigatório' 
+      });
+    }
+
+    const getTurmasQuery = `
+      SELECT 
+        id_turma,
+        nome_turma,
+        codigo_acesso,
+        data_criacao
+      FROM Turma
+      WHERE id_professor = ?
+      ORDER BY data_criacao DESC
+    `;
+
+    db.query(getTurmasQuery, [id_professor], (err, results) => {
+      if (err) {
+        console.error('Erro ao buscar turmas:', err);
+        return res.json({ 
+          success: false, 
+          message: 'Erro ao buscar turmas' 
+        });
+      }
+
+      console.log(`Encontradas ${results.length} turmas`);
+      
+      res.json({
+        success: true,
+        turmas: results,
+        total: results.length
+      });
+    });
+
+  } catch (error) {
+    console.error('Erro ao listar turmas:', error);
+    res.json({ 
+      success: false, 
+      message: 'Erro interno do servidor' 
+    });
+  }
 });
 
+app.delete('/api/turmas/:id_turma', (req, res) => {
+  try {
+    const { id_turma } = req.params;
+
+    console.log('=== EXCLUINDO TURMA ===');
+    console.log('ID Turma:', id_turma);
+
+    if (!id_turma) {
+      return res.json({ 
+        success: false, 
+        message: 'ID da turma é obrigatório' 
+      });
+    }
+
+    const deleteTurmaQuery = 'DELETE FROM Turma WHERE id_turma = ?';
+    db.query(deleteTurmaQuery, [id_turma], (err, result) => {
+      if (err) {
+        console.error('Erro ao excluir turma:', err);
+        return res.json({ 
+          success: false, 
+          message: 'Erro ao excluir turma' 
+        });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.json({ 
+          success: false, 
+          message: 'Turma não encontrada' 
+        });
+      }
+
+      console.log('Turma excluída com sucesso!');
+      res.json({
+        success: true,
+        message: 'Turma excluída com sucesso!'
+      });
+    });
+
+  } catch (error) {
+    console.error('Erro ao excluir turma:', error);
+    res.json({ 
+      success: false, 
+      message: 'Erro interno do servidor' 
+    });
+  }
+});
+
+app.put('/api/turmas/:id_turma', (req, res) => {
+  try {
+    const { id_turma } = req.params;
+    const { nome_turma, codigo_acesso } = req.body;
+
+    console.log('=== ATUALIZANDO TURMA ===');
+    console.log('ID Turma:', id_turma);
+    console.log('Novo nome:', nome_turma);
+    console.log('Novo código:', codigo_acesso);
+
+    if (!id_turma || !nome_turma || !codigo_acesso) {
+      return res.json({ 
+        success: false, 
+        message: 'Todos os campos são obrigatórios' 
+      });
+    }
+
+    const checkCodigoQuery = 'SELECT id_turma FROM Turma WHERE codigo_acesso = ? AND id_turma != ?';
+    db.query(checkCodigoQuery, [codigo_acesso, id_turma], (err, results) => {
+      if (err) {
+        console.error('Erro ao verificar código:', err);
+        return res.json({ 
+          success: false, 
+          message: 'Erro interno do servidor' 
+        });
+      }
+
+      if (results.length > 0) {
+        return res.json({ 
+          success: false, 
+          message: 'Este código de acesso já está em uso por outra turma' 
+        });
+      }
+
+      const updateTurmaQuery = 'UPDATE Turma SET nome_turma = ?, codigo_acesso = ? WHERE id_turma = ?';
+      db.query(updateTurmaQuery, [nome_turma, codigo_acesso.toUpperCase(), id_turma], (err, result) => {
+        if (err) {
+          console.error('Erro ao atualizar turma:', err);
+          return res.json({ 
+            success: false, 
+            message: 'Erro ao atualizar turma' 
+          });
+        }
+
+        if (result.affectedRows === 0) {
+          return res.json({ 
+            success: false, 
+            message: 'Turma não encontrada' 
+          });
+        }
+
+        console.log('Turma atualizada com sucesso!');
+        res.json({
+          success: true,
+          message: 'Turma atualizada com sucesso!',
+          turma: {
+            id_turma,
+            nome_turma,
+            codigo_acesso: codigo_acesso.toUpperCase()
+          }
+        });
+      });
+    });
+
+  } catch (error) {
+    console.error('Erro ao atualizar turma:', error);
+    res.json({ 
+      success: false, 
+      message: 'Erro interno do servidor' 
+    });
+  }
+});
 
 app.get('/api/professor/:id_usuario', (req, res) => {
   try {
@@ -506,4 +678,8 @@ app.get('/api/professor/:id_usuario', (req, res) => {
     console.error('Erro ao buscar professor:', error);
     res.json({ success: false, message: 'Erro interno do servidor' });
   }
+});
+
+app.listen(port, () => {
+  console.log(`Servidor rodando na porta ${port}`);
 });
