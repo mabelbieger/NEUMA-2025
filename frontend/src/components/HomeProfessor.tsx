@@ -614,7 +614,7 @@ export default function HomeProfessor() {
                     onClick={handleGerarCodigo}
                     style={{
                       padding: '0.75rem 1rem',
-                      backgroundColor: '#059669',
+                      backgroundColor: '#000000ff',
                       color: 'white',
                       border: 'none',
                       borderRadius: '0.5rem',
