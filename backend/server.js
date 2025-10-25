@@ -10,7 +10,6 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Configuração do Multer para upload de arquivos
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadDir = path.join(__dirname, 'uploads');
@@ -41,7 +40,6 @@ const upload = multer({
   }
 });
 
-// Servir arquivos estáticos da pasta uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(cors());
@@ -66,6 +64,48 @@ db.connect((err) => {
     console.log('Conectado ao MySQL');
   }
 });
+
+const EMAILJS_CONFIG = {
+  serviceId: 'service_hxppnxb',
+  templateId: '_ejs-test-mail-service_',  
+  publicKey: 'xf9Ljhxu447oam886'
+};
+
+const enviarEmailToken = async (email, nome, token) => {
+  try {
+    const emailData = {
+      service_id: EMAILJS_CONFIG.serviceId,
+      template_id: EMAILJS_CONFIG.templateId,
+      user_id: EMAILJS_CONFIG.publicKey,
+      template_params: {
+        to_email: email,
+        name: nome,
+        token: token,
+        subject: '🔐 Token de Recuperação de Senha - Neuma'
+      }
+    };
+
+    const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(emailData)
+    });
+
+    if (response.ok) {
+      console.log('✅ Email enviado com sucesso para:', email);
+      return true;
+    } else {
+      const errorText = await response.text();
+      console.error('❌ Erro ao enviar email:', errorText);
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ Erro ao enviar email para', email, ':', error);
+    return false;
+  }
+};
 
 app.get('/api/status', (req, res) => {
   res.json({ status: 'Servidor funcionando!', timestamp: new Date().toISOString() });
@@ -247,13 +287,12 @@ app.post('/api/login', async (req, res) => {
           return res.json({ success: false, message: 'Senha incorreta' });
         }
 
-        // ====== CORREÇÃO APLICADA AQUI ======
         const responseUser = {
           id: user.id_usuario,
           nome: user.nome,
           email: user.email,
           tipo: user.tipo_usuario,
-          tipo_usuario: user.tipo_usuario  // ← LINHA ADICIONADA
+          tipo_usuario: user.tipo_usuario
         };
 
         if (user.tipo_usuario === 'Professor' && user.id_professor) {
@@ -264,7 +303,7 @@ app.post('/api/login', async (req, res) => {
         }
 
         console.log('Login bem-sucedido para:', email);
-        console.log('Dados do usuário retornados:', responseUser);  // ← LOG ADICIONADO
+        console.log('Dados do usuário retornados:', responseUser);
         
         res.json({
           success: true,
@@ -282,7 +321,6 @@ app.post('/api/login', async (req, res) => {
     res.json({ success: false, message: 'Erro interno do servidor' });
   }
 });
-
 
 app.post('/api/turmas', (req, res) => {
   try {
@@ -465,7 +503,6 @@ app.post('/api/salvar-teste', (req, res) => {
     res.json({ success: false, message: 'Erro interno do servidor' });
   }
 });
-
 
 app.post('/api/recuperar-senha', async (req, res) => {
   try {
@@ -718,18 +755,16 @@ app.get('/api/professor/:id_usuario', (req, res) => {
   }
 });
 
-// ==================== ROTAS DE ATIVIDADES ====================
-
-// Criar atividade com upload de arquivo
 app.post('/api/atividades', upload.single('arquivo'), async (req, res) => {
   try {
-    const { id_professor, titulo, descricao, id_categoria, tipo_conteudo, conteudo_texto, turmas_ids } = req.body;
+    const { id_professor, titulo, descricao, id_categoria, tipo_conteudo, conteudo_texto, turmas_ids, publica } = req.body;
 
     console.log('=== CRIANDO ATIVIDADE ===');
     console.log('Professor:', id_professor);
     console.log('Título:', titulo);
     console.log('Categoria:', id_categoria);
     console.log('Tipo:', tipo_conteudo);
+    console.log('Pública:', publica);
     console.log('Turmas:', turmas_ids);
 
     if (!id_professor || !titulo || !id_categoria || !tipo_conteudo) {
@@ -742,22 +777,20 @@ app.post('/api/atividades', upload.single('arquivo'), async (req, res) => {
     let conteudo = conteudo_texto || '';
     let nome_arquivo = null;
 
-    // Se enviou arquivo
     if (req.file) {
       conteudo = `/uploads/${req.file.filename}`;
       nome_arquivo = req.file.originalname;
     }
 
-    // Inserir atividade
     const insertAtividadeQuery = `
       INSERT INTO Atividade 
-      (id_professor, titulo, descricao, id_categoria, tipo_conteudo, conteudo, nome_arquivo) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      (id_professor, titulo, descricao, id_categoria, tipo_conteudo, conteudo, nome_arquivo, publica) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     db.query(
       insertAtividadeQuery, 
-      [id_professor, titulo, descricao, id_categoria, tipo_conteudo, conteudo, nome_arquivo],
+      [id_professor, titulo, descricao, id_categoria, tipo_conteudo, conteudo, nome_arquivo, publica || false],
       (err, result) => {
         if (err) {
           console.error('Erro ao inserir atividade:', err);
@@ -766,9 +799,8 @@ app.post('/api/atividades', upload.single('arquivo'), async (req, res) => {
 
         const id_atividade = result.insertId;
 
-        // Se tem turmas, associar
         if (turmas_ids && turmas_ids.length > 0) {
-          const turmasArray = JSON.parse(turmas_ids);
+          const turmasArray = typeof turmas_ids === 'string' ? JSON.parse(turmas_ids) : turmas_ids;
           const insertTurmaAtividadeQuery = 'INSERT INTO Turma_Atividade (id_turma, id_atividade) VALUES ?';
           const values = turmasArray.map(id_turma => [id_turma, id_atividade]);
 
@@ -800,7 +832,6 @@ app.post('/api/atividades', upload.single('arquivo'), async (req, res) => {
   }
 });
 
-// Listar atividades do professor
 app.get('/api/atividades/professor/:id_professor', (req, res) => {
   try {
     const { id_professor } = req.params;
@@ -837,7 +868,6 @@ app.get('/api/atividades/professor/:id_professor', (req, res) => {
   }
 });
 
-// Listar atividades de uma turma por categoria
 app.get('/api/atividades/turma/:id_turma/categoria/:id_categoria', (req, res) => {
   try {
     const { id_turma, id_categoria } = req.params;
@@ -871,12 +901,10 @@ app.get('/api/atividades/turma/:id_turma/categoria/:id_categoria', (req, res) =>
   }
 });
 
-// Excluir atividade
 app.delete('/api/atividades/:id_atividade', (req, res) => {
   try {
     const { id_atividade } = req.params;
 
-    // Primeiro, buscar o arquivo para deletar
     db.query('SELECT conteudo, tipo_conteudo FROM Atividade WHERE id_atividade = ?', [id_atividade], (err, results) => {
       if (err || results.length === 0) {
         return res.json({ success: false, message: 'Atividade não encontrada' });
@@ -884,7 +912,6 @@ app.delete('/api/atividades/:id_atividade', (req, res) => {
 
       const atividade = results[0];
 
-      // Se tem arquivo, deletar do sistema
       if (atividade.conteudo && atividade.conteudo.startsWith('/uploads/')) {
         const filePath = path.join(__dirname, atividade.conteudo);
         if (fs.existsSync(filePath)) {
@@ -892,7 +919,6 @@ app.delete('/api/atividades/:id_atividade', (req, res) => {
         }
       }
 
-      // Deletar registros relacionados e a atividade
       db.query('DELETE FROM Turma_Atividade WHERE id_atividade = ?', [id_atividade], (err) => {
         if (err) console.error('Erro ao deletar relacionamentos:', err);
 
@@ -916,7 +942,6 @@ app.delete('/api/atividades/:id_atividade', (req, res) => {
   }
 });
 
-// Configurar permissão de visualização de outras categorias na turma
 app.post('/api/turmas/:id_turma/configuracao', (req, res) => {
   try {
     const { id_turma } = req.params;
@@ -946,7 +971,6 @@ app.post('/api/turmas/:id_turma/configuracao', (req, res) => {
   }
 });
 
-// Buscar configuração da turma
 app.get('/api/turmas/:id_turma/configuracao', (req, res) => {
   try {
     const { id_turma } = req.params;
@@ -967,6 +991,531 @@ app.get('/api/turmas/:id_turma/configuracao', (req, res) => {
 
   } catch (error) {
     console.error('Erro ao buscar configuração:', error);
+    res.json({ success: false, message: 'Erro interno do servidor' });
+  }
+});
+
+app.post('/api/entrar-turma', (req, res) => {
+  const { id_usuario, codigo_acesso } = req.body;
+
+  console.log('=== ENTRANDO NA TURMA ===');
+  console.log('ID Usuario:', id_usuario);
+  console.log('Código:', codigo_acesso);
+
+  if (!id_usuario || !codigo_acesso) {
+    return res.json({
+      success: false,
+      message: 'ID do usuário e código de acesso são obrigatórios'
+    });
+  }
+
+  const getAlunoQuery = 'SELECT id_aluno FROM Aluno WHERE id_usuario = ?';
+  db.query(getAlunoQuery, [id_usuario], (err, alunoResults) => {
+    if (err) {
+      console.error('Erro ao buscar aluno:', err);
+      return res.json({
+        success: false,
+        message: 'Erro ao processar entrada na turma'
+      });
+    }
+
+    if (alunoResults.length === 0) {
+      return res.json({
+        success: false,
+        message: 'Aluno não encontrado'
+      });
+    }
+
+    const id_aluno = alunoResults[0].id_aluno;
+    console.log('ID Aluno encontrado:', id_aluno);
+
+    const getTurmaQuery = 'SELECT id_turma, nome_turma FROM Turma WHERE codigo_acesso = ?';
+    db.query(getTurmaQuery, [codigo_acesso.toUpperCase()], (err, turmaResults) => {
+      if (err) {
+        console.error('Erro ao buscar turma:', err);
+        return res.json({
+          success: false,
+          message: 'Erro ao processar entrada na turma'
+        });
+      }
+
+      if (turmaResults.length === 0) {
+        return res.json({
+          success: false,
+          message: 'Código de turma inválido'
+        });
+      }
+
+      const turma = turmaResults[0];
+      console.log('Turma encontrada:', turma.nome_turma);
+
+      const checkAlunoTurmaQuery = 'SELECT * FROM Turma_Aluno WHERE id_turma = ? AND id_aluno = ?';
+      db.query(checkAlunoTurmaQuery, [turma.id_turma, id_aluno], (err, alunoNaTurmaResults) => {
+        if (err) {
+          console.error('Erro ao verificar aluno na turma:', err);
+          return res.json({
+            success: false,
+            message: 'Erro ao processar entrada na turma'
+          });
+        }
+
+        if (alunoNaTurmaResults.length > 0) {
+          return res.json({
+            success: false,
+            message: 'Você já está cadastrado nesta turma'
+          });
+        }
+
+        const insertTurmaAlunoQuery = 'INSERT INTO Turma_Aluno (id_turma, id_aluno) VALUES (?, ?)';
+        db.query(insertTurmaAlunoQuery, [turma.id_turma, id_aluno], (err) => {
+          if (err) {
+            console.error('Erro ao adicionar aluno na turma:', err);
+            return res.json({
+              success: false,
+              message: 'Erro ao processar entrada na turma'
+            });
+          }
+
+          console.log('Aluno adicionado à turma com sucesso!');
+          res.json({
+            success: true,
+            message: `Você entrou na turma "${turma.nome_turma}" com sucesso!`,
+            turma: turma
+          });
+        });
+      });
+    });
+  });
+});
+
+app.get('/api/aluno/:id_usuario', (req, res) => {
+  const { id_usuario } = req.params;
+
+  console.log('=== BUSCANDO DADOS DO ALUNO ===');
+  console.log('ID Usuario:', id_usuario);
+
+  const query = `
+    SELECT 
+      a.id_aluno,
+      a.id_usuario,
+      a.id_categoria,
+      a.pontuacao_visual,
+      a.pontuacao_auditivo,
+      a.pontuacao_cinestesico,
+      a.pontuacao_leitura_escrita,
+      a.teste_realizado,
+      u.nome,
+      u.email,
+      c.nome_categoria
+    FROM Aluno a
+    JOIN Usuario u ON a.id_usuario = u.id_usuario
+    LEFT JOIN Categoria c ON a.id_categoria = c.id_categoria
+    WHERE a.id_usuario = ?
+  `;
+
+  db.query(query, [id_usuario], (err, results) => {
+    if (err) {
+      console.error('Erro ao buscar aluno:', err);
+      return res.json({ success: false, message: 'Erro ao buscar dados do aluno' });
+    }
+
+    if (results.length === 0) {
+      return res.json({ success: false, message: 'Aluno não encontrado' });
+    }
+
+    res.json({
+      success: true,
+      aluno: results[0]
+    });
+  });
+});
+
+app.get('/api/aluno/:id_usuario/turmas', (req, res) => {
+  const { id_usuario } = req.params;
+
+  console.log('=== BUSCANDO TURMAS DO ALUNO ===');
+  console.log('ID Usuario:', id_usuario);
+
+  const query = `
+    SELECT 
+      t.id_turma,
+      t.nome_turma,
+      t.codigo_acesso,
+      t.data_criacao
+    FROM Turma t
+    JOIN Turma_Aluno ta ON t.id_turma = ta.id_turma
+    JOIN Aluno a ON ta.id_aluno = a.id_aluno
+    WHERE a.id_usuario = ?
+    ORDER BY t.data_criacao DESC
+  `;
+
+  db.query(query, [id_usuario], (err, results) => {
+    if (err) {
+      console.error('Erro ao buscar turmas do aluno:', err);
+      return res.json({ success: false, message: 'Erro ao buscar turmas' });
+    }
+
+    res.json({
+      success: true,
+      turmas: results
+    });
+  });
+});
+
+app.get('/api/atividades-publicas/:id_categoria', (req, res) => {
+  const { id_categoria } = req.params;
+
+  console.log('=== BUSCANDO ATIVIDADES PÚBLICAS FILTRADAS ===');
+  console.log('Categoria do aluno:', id_categoria);
+
+  const idCategoriaNum = parseInt(id_categoria);
+
+  if (isNaN(idCategoriaNum)) {
+    return res.json({ 
+      success: false, 
+      message: 'ID da categoria inválido' 
+    });
+  }
+
+  const query = `
+    SELECT 
+      a.id_atividade,
+      a.titulo,
+      a.descricao,
+      a.id_categoria,
+      a.tipo_conteudo,
+      a.conteudo,
+      a.nome_arquivo,
+      a.data_criacao,
+      a.publica,
+      c.nome_categoria,
+      u.nome as nome_professor
+    FROM Atividade a
+    JOIN Categoria c ON a.id_categoria = c.id_categoria
+    JOIN Professor p ON a.id_professor = p.id_professor
+    JOIN Usuario u ON p.id_usuario = u.id_usuario
+    WHERE a.publica = true 
+      AND a.id_categoria = ?
+    ORDER BY a.data_criacao DESC
+  `;
+
+  db.query(query, [idCategoriaNum], (err, results) => {
+    if (err) {
+      console.error('Erro ao buscar atividades públicas:', err);
+      return res.json({ 
+        success: false, 
+        message: 'Erro ao buscar atividades públicas' 
+      });
+    }
+
+    console.log(`✅ Encontradas ${results.length} atividades públicas para categoria ID ${idCategoriaNum}`);
+    
+    res.json({
+      success: true,
+      atividades: results,
+      categoria_id: idCategoriaNum,
+      total: results.length
+    });
+  });
+});
+
+app.get('/api/atividades-publicas', (req, res) => {
+  console.log('=== BUSCANDO TODAS ATIVIDADES PÚBLICAS ===');
+
+  const query = `
+    SELECT 
+      a.id_atividade,
+      a.titulo,
+      a.descricao,
+      a.id_categoria,
+      a.tipo_conteudo,
+      a.conteudo,
+      a.nome_arquivo,
+      a.data_criacao,
+      a.publica,
+      c.nome_categoria,
+      u.nome as nome_professor
+    FROM Atividade a
+    JOIN Categoria c ON a.id_categoria = c.id_categoria
+    JOIN Professor p ON a.id_professor = p.id_professor
+    JOIN Usuario u ON p.id_usuario = u.id_usuario
+    WHERE a.publica = true
+    ORDER BY a.data_criacao DESC
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Erro ao buscar atividades públicas:', err);
+      return res.json({ success: false, message: 'Erro ao buscar atividades públicas' });
+    }
+
+    console.log(`✅ Encontradas ${results.length} atividades públicas no total`);
+    
+    res.json({
+      success: true,
+      atividades: results
+    });
+  });
+});
+
+app.get('/api/debug/atividades', (req, res) => {
+  console.log('=== DEBUG: VERIFICANDO TODAS ATIVIDADES NO BANCO ===');
+
+  const query = `
+    SELECT 
+      a.id_atividade,
+      a.titulo,
+      a.publica,
+      c.nome_categoria,
+      u.nome as professor
+    FROM Atividade a
+    JOIN Categoria c ON a.id_categoria = c.id_categoria
+    JOIN Professor p ON a.id_professor = p.id_professor
+    JOIN Usuario u ON p.id_usuario = u.id_usuario
+    ORDER BY a.data_criacao DESC
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Erro no debug:', err);
+      return res.json({ success: false, message: 'Erro no debug' });
+    }
+
+    console.log(`Total de atividades no banco: ${results.length}`);
+    
+    const publicas = results.filter(a => a.publica === 1 || a.publica === true);
+    const privadas = results.filter(a => a.publica === 0 || a.publica === false);
+    
+    console.log(`Atividades PÚBLICAS: ${publicas.length}`);
+    publicas.forEach(a => {
+      console.log(`  - ${a.titulo} (${a.nome_categoria}) - ID: ${a.id_atividade}`);
+    });
+    
+    console.log(`Atividades PRIVADAS: ${privadas.length}`);
+    privadas.forEach(a => {
+      console.log(`  - ${a.titulo} (${a.nome_categoria}) - ID: ${a.id_atividade}`);
+    });
+
+    res.json({
+      success: true,
+      total: results.length,
+      publicas: publicas.length,
+      privadas: privadas.length,
+      todas: results
+    });
+  });
+});
+
+app.put('/api/atividades/:id_atividade/publica', (req, res) => {
+  const { id_atividade } = req.params;
+  const { publica } = req.body;
+
+  console.log('=== ATUALIZANDO ATIVIDADE PÚBLICA ===');
+  console.log('ID Atividade:', id_atividade);
+  console.log('Pública:', publica);
+
+  const query = 'UPDATE Atividade SET publica = ? WHERE id_atividade = ?';
+  
+  db.query(query, [publica, id_atividade], (err, result) => {
+    if (err) {
+      console.error('Erro ao atualizar atividade:', err);
+      return res.json({ success: false, message: 'Erro ao atualizar atividade' });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.json({ success: false, message: 'Atividade não encontrada' });
+    }
+
+    res.json({
+      success: true,
+      message: `Atividade ${publica ? 'tornada pública' : 'tornada privada'} com sucesso!`
+    });
+  });
+});
+
+
+app.post('/api/solicitar-troca-senha', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    console.log('=== SOLICITAÇÃO DE TROCA DE SENHA ===');
+    console.log('Email:', email);
+
+    if (!email) {
+      return res.json({ success: false, message: 'Email é obrigatório' });
+    }
+
+    const checkUserQuery = 'SELECT id_usuario, nome FROM Usuario WHERE email = ?';
+    db.query(checkUserQuery, [email], async (err, results) => {
+      if (err) {
+        console.error('Erro ao verificar usuário:', err);
+        return res.json({ success: false, message: 'Erro interno do servidor' });
+      }
+
+      if (results.length === 0) {
+        console.log('Usuário não encontrado:', email);
+        return res.json({ success: false, message: 'Nenhuma conta encontrada com este email' });
+      }
+
+      const user = results[0];
+      
+      // Gerar token de 6 dígitos
+      const token = Math.floor(100000 + Math.random() * 900000).toString();
+      const dataExpiracao = new Date(Date.now() + 2 * 60 * 1000); // 2 minutos
+
+      const clearOldTokensQuery = 'DELETE FROM RecuperacaoSenha WHERE id_usuario = ?';
+      db.query(clearOldTokensQuery, [user.id_usuario], (err) => {
+        if (err) {
+          console.error('Erro ao limpar tokens antigos:', err);
+        }
+
+        const insertTokenQuery = `
+          INSERT INTO RecuperacaoSenha (id_usuario, token, data_expiracao) 
+          VALUES (?, ?, ?)
+        `;
+
+        db.query(insertTokenQuery, [user.id_usuario, token, dataExpiracao], async (err) => {
+          if (err) {
+            console.error('Erro ao inserir token:', err);
+            return res.json({ success: false, message: 'Erro interno do servidor' });
+          }
+
+          console.log(`✅ Token gerado para ${email}: ${token} (Expira em 2 minutos)`);
+          
+          // ENVIAR EMAIL VIA EMAILJS
+          const emailEnviado = await enviarEmailToken(email, user.nome, token);
+          
+          if (emailEnviado) {
+            res.json({
+              success: true,
+              message: 'Token enviado para seu email! Verifique sua caixa de entrada.'
+            });
+          } else {
+            res.json({
+              success: false,
+              message: 'Erro ao enviar email. Tente novamente em alguns instantes.'
+            });
+          }
+        });
+      });
+    });
+
+  } catch (error) {
+    console.error('Erro na solicitação de troca de senha:', error);
+    res.json({ success: false, message: 'Erro interno do servidor' });
+  }
+});
+
+app.post('/api/verificar-token', async (req, res) => {
+  try {
+    const { email, token } = req.body;
+
+    console.log('=== VERIFICANDO TOKEN ===');
+    console.log('Email:', email);
+    console.log('Token recebido:', token);
+
+    if (!email || !token) {
+      return res.json({ success: false, message: 'Email e token são obrigatórios' });
+    }
+
+    const verifyTokenQuery = `
+      SELECT rs.*, u.id_usuario 
+      FROM RecuperacaoSenha rs
+      JOIN Usuario u ON rs.id_usuario = u.id_usuario
+      WHERE u.email = ? AND rs.token = ? AND rs.utilizado = FALSE AND rs.data_expiracao > NOW()
+    `;
+
+    db.query(verifyTokenQuery, [email, token], (err, results) => {
+      if (err) {
+        console.error('Erro ao verificar token:', err);
+        return res.json({ success: false, message: 'Erro interno do servidor' });
+      }
+
+      console.log('Resultados da verificação:', results);
+
+      if (results.length === 0) {
+        const checkExpiredQuery = `
+          SELECT rs.* 
+          FROM RecuperacaoSenha rs
+          JOIN Usuario u ON rs.id_usuario = u.id_usuario
+          WHERE u.email = ? AND rs.token = ? AND rs.utilizado = FALSE
+        `;
+        
+        db.query(checkExpiredQuery, [email, token], (err, expiredResults) => {
+          if (err) {
+            return res.json({ success: false, message: 'Token inválido' });
+          }
+          
+          if (expiredResults.length > 0) {
+            return res.json({ success: false, message: 'Token expirado. Solicite um novo token.' });
+          } else {
+            return res.json({ success: false, message: 'Token inválido' });
+          }
+        });
+        return;
+      }
+
+      const recovery = results[0];
+
+      const markUsedQuery = 'UPDATE RecuperacaoSenha SET utilizado = TRUE WHERE id_recuperacao = ?';
+      db.query(markUsedQuery, [recovery.id_recuperacao], (err) => {
+        if (err) {
+          console.error('Erro ao marcar token como usado:', err);
+        }
+      });
+
+      res.json({
+        success: true,
+        message: 'Token verificado com sucesso!',
+        id_usuario: recovery.id_usuario
+      });
+    });
+
+  } catch (error) {
+    console.error('Erro na verificação do token:', error);
+    res.json({ success: false, message: 'Erro interno do servidor' });
+  }
+});
+
+app.post('/api/trocar-senha', async (req, res) => {
+  try {
+    const { id_usuario, nova_senha } = req.body;
+
+    console.log('=== TROCANDO SENHA ===');
+    console.log('ID Usuário:', id_usuario);
+
+    if (!id_usuario || !nova_senha) {
+      return res.json({ success: false, message: 'Dados incompletos' });
+    }
+
+    if (nova_senha.length < 6) {
+      return res.json({ success: false, message: 'A senha deve ter pelo menos 6 caracteres' });
+    }
+
+    const hashedPassword = await bcrypt.hash(nova_senha, 10);
+
+    const updatePasswordQuery = 'UPDATE Usuario SET senha = ? WHERE id_usuario = ?';
+    
+    db.query(updatePasswordQuery, [hashedPassword, id_usuario], (err, result) => {
+      if (err) {
+        console.error('Erro ao atualizar senha:', err);
+        return res.json({ success: false, message: 'Erro ao atualizar senha' });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.json({ success: false, message: 'Usuário não encontrado' });
+      }
+
+      console.log('✅ Senha atualizada com sucesso para usuário:', id_usuario);
+      
+      res.json({
+        success: true,
+        message: 'Senha alterada com sucesso!'
+      });
+    });
+
+  } catch (error) {
+    console.error('Erro ao trocar senha:', error);
     res.json({ success: false, message: 'Erro interno do servidor' });
   }
 });

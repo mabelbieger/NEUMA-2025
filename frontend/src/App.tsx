@@ -3,11 +3,13 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login';
 import Cadastro from './components/Cadastro';
 import Home from './components/Home';
+import HomeAluno from './components/HomeAluno'; 
 import HomeProfessor from './components/HomeProfessor';
 import MinhasTurmas from './components/MinhasTurmas'; 
 import Teste from './components/teste';
 import Resultado from './components/resultado';
 import Personalizada from './components/Personalizada';
+import AtividadesPublicas from './components/AtividadesPublicas';
 
 export default function App() {
   return (
@@ -16,11 +18,13 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/cadastro" element={<Cadastro />} />
       <Route path="/home" element={<Home />} />
+      <Route path="/home-aluno" element={<HomeAluno />} />
       <Route path="/home-professor" element={<HomeProfessor />} />
       <Route path="/MinhasTurmas" element={<MinhasTurmas />} /> 
       <Route path="/teste" element={<Teste />} />
       <Route path="/resultado" element={<Resultado />} />
       <Route path="/personalizada" element={<Personalizada />} />
+      <Route path="/atividades-publicas" element={<AtividadesPublicas />} />
     </Routes>
   );
 }

@@ -28,6 +28,7 @@ interface Atividade {
   nome_arquivo: string;
   turmas: string;
   data_criacao: string;
+  publica: boolean;
 }
 
 export default function MinhasTurmas() {
@@ -36,7 +37,6 @@ export default function MinhasTurmas() {
   const [isLoading, setIsLoading] = useState(true);
   const [idProfessor, setIdProfessor] = useState<number | null>(null);
   
-  // Estados para atividades
   const [showModalAtividade, setShowModalAtividade] = useState(false);
   const [showListaAtividades, setShowListaAtividades] = useState(false);
   const [atividades, setAtividades] = useState<Atividade[]>([]);
@@ -56,7 +56,8 @@ export default function MinhasTurmas() {
     tipo_conteudo: 'TEXTO',
     conteudo_texto: '',
     arquivo: null as File | null,
-    turmas_selecionadas: [] as number[]
+    turmas_selecionadas: [] as number[],
+    publica: false
   });
 
   useEffect(() => {
@@ -179,7 +180,8 @@ export default function MinhasTurmas() {
       tipo_conteudo: 'TEXTO',
       conteudo_texto: '',
       arquivo: null,
-      turmas_selecionadas: []
+      turmas_selecionadas: [],
+      publica: false
     });
     setShowModalAtividade(true);
   };
@@ -221,6 +223,7 @@ export default function MinhasTurmas() {
       formData.append('id_categoria', novaAtividade.id_categoria.toString());
       formData.append('tipo_conteudo', novaAtividade.tipo_conteudo);
       formData.append('turmas_ids', JSON.stringify(novaAtividade.turmas_selecionadas));
+      formData.append('publica', novaAtividade.publica.toString());
 
       if (novaAtividade.tipo_conteudo === 'TEXTO') {
         formData.append('conteudo_texto', novaAtividade.conteudo_texto);
@@ -262,6 +265,24 @@ export default function MinhasTurmas() {
     } catch (error) {
       console.error('Erro ao excluir atividade:', error);
       alert('Erro ao excluir atividade');
+    }
+  };
+
+  const toggleAtividadePublica = async (idAtividade: number, titulo: string, atualPublica: boolean) => {
+    try {
+      const response = await axios.put(`${API_URL}/atividades/${idAtividade}/publica`, {
+        publica: !atualPublica
+      });
+
+      if (response.data.success) {
+        alert(`Atividade "${titulo}" ${!atualPublica ? 'tornada pública' : 'tornada privada'} com sucesso!`);
+        carregarAtividades();
+      } else {
+        alert(response.data.message || 'Erro ao atualizar atividade');
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar atividade:', error);
+      alert('Erro ao atualizar atividade');
     }
   };
 
@@ -341,7 +362,6 @@ export default function MinhasTurmas() {
             </p>
           </div>
 
-          {/* Botões de ação */}
           <div style={{ 
             display: 'flex', 
             gap: '1rem', 
@@ -559,7 +579,6 @@ export default function MinhasTurmas() {
         </div>
       </main>
 
-      {/* Modal - Criar Atividade */}
       {showModalAtividade && (
         <div style={{
           position: 'fixed',
@@ -824,7 +843,7 @@ export default function MinhasTurmas() {
                 </div>
               )}
 
-              <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ marginBottom: '1rem' }}>
                 <label style={{
                   display: 'block',
                   marginBottom: '0.5rem',
@@ -868,6 +887,35 @@ export default function MinhasTurmas() {
                 </p>
               </div>
 
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  cursor: 'pointer',
+                  padding: '0.75rem',
+                  border: `2px solid ${novaAtividade.publica ? '#10B981' : '#CED0FF'}`,
+                  borderRadius: '0.5rem',
+                  backgroundColor: novaAtividade.publica ? '#f0fdf4' : 'white',
+                  transition: 'all 0.2s'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={novaAtividade.publica}
+                    onChange={(e) => setNovaAtividade(prev => ({ ...prev, publica: e.target.checked }))}
+                    style={{ transform: 'scale(1.2)' }}
+                  />
+                  <div>
+                    <div style={{ fontWeight: '600', color: '#374151', marginBottom: '0.25rem' }}>
+                      Tornar atividade pública
+                    </div>
+                    <div style={{ fontSize: '0.875rem', color: '#666' }}>
+                      Esta atividade ficará disponível para todos os alunos na seção "Atividades Públicas"
+                    </div>
+                  </div>
+                </label>
+              </div>
+
               <div style={{
                 display: 'flex',
                 gap: '1rem',
@@ -909,7 +957,6 @@ export default function MinhasTurmas() {
         </div>
       )}
 
-      {/* Modal - Lista de Atividades */}
       {showListaAtividades && (
         <div style={{
           position: 'fixed',
@@ -1008,22 +1055,38 @@ export default function MinhasTurmas() {
                           </p>
                         )}
                       </div>
-                      <button
-                        onClick={() => excluirAtividade(atividade.id_atividade, atividade.titulo)}
-                        style={{
-                          backgroundColor: '#dc2626',
-                          color: 'white',
-                          padding: '0.5rem 1rem',
-                          borderRadius: '0.5rem',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontSize: '0.875rem',
-                          fontWeight: '500',
-                          marginLeft: '1rem'
-                        }}
-                      >
-                        Excluir
-                      </button>
+                      <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
+                        <button
+                          onClick={() => toggleAtividadePublica(atividade.id_atividade, atividade.titulo, atividade.publica)}
+                          style={{
+                            backgroundColor: atividade.publica ? '#10B981' : '#6B7280',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.5rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '0.875rem',
+                            fontWeight: '500'
+                          }}
+                        >
+                          {atividade.publica ? 'Pública' : 'Privada'}
+                        </button>
+                        <button
+                          onClick={() => excluirAtividade(atividade.id_atividade, atividade.titulo)}
+                          style={{
+                            backgroundColor: '#dc2626',
+                            color: 'white',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '0.5rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '0.875rem',
+                            fontWeight: '500'
+                          }}
+                        >
+                          Excluir
+                        </button>
+                      </div>
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
@@ -1048,6 +1111,19 @@ export default function MinhasTurmas() {
                       }}>
                         {atividade.tipo_conteudo}
                       </span>
+
+                      {atividade.publica && (
+                        <span style={{
+                          backgroundColor: '#10B981',
+                          color: 'white',
+                          padding: '0.25rem 0.75rem',
+                          borderRadius: '9999px',
+                          fontSize: '0.75rem',
+                          fontWeight: '600'
+                        }}>
+                          🌍 Pública
+                        </span>
+                      )}
                     </div>
 
                     {atividade.nome_arquivo && (
