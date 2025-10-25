@@ -8,6 +8,8 @@ import MinhasTurmas from './components/MinhasTurmas';
 import Teste from './components/teste';
 import Resultado from './components/resultado';
 import Personalizada from './components/Personalizada';
+import PerfilProfessor from './components/PerfilProfessor';
+import PerfilAluno from './components/PerfilAluno';
 
 export default function App() {
   return (
@@ -21,6 +23,8 @@ export default function App() {
       <Route path="/teste" element={<Teste />} />
       <Route path="/resultado" element={<Resultado />} />
       <Route path="/personalizada" element={<Personalizada />} />
+      <Route path="/perfil-professor" element={<PerfilProfessor />} />
+      <Route path="/perfil-aluno" element={<PerfilAluno />} />
     </Routes>
   );
 }

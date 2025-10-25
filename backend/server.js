@@ -971,6 +971,178 @@ app.get('/api/turmas/:id_turma/configuracao', (req, res) => {
   }
 });
 
+// ==================== ROTAS DE PERFIL ====================
+
+// Buscar dados do perfil
+app.get('/api/perfil/:id_usuario', (req, res) => {
+  try {
+    const { id_usuario } = req.params;
+
+    const query = `
+      SELECT 
+        u.id_usuario,
+        u.nome,
+        u.email,
+        u.foto_perfil,
+        u.tipo_usuario,
+        p.id_professor,
+        a.id_aluno
+      FROM Usuario u
+      LEFT JOIN Professor p ON u.id_usuario = p.id_usuario
+      LEFT JOIN Aluno a ON u.id_usuario = a.id_usuario
+      WHERE u.id_usuario = ?
+    `;
+
+    db.query(query, [id_usuario], (err, results) => {
+      if (err) {
+        console.error('Erro ao buscar perfil:', err);
+        return res.json({ success: false, message: 'Erro ao buscar perfil' });
+      }
+
+      if (results.length === 0) {
+        return res.json({ success: false, message: 'Usuário não encontrado' });
+      }
+
+      res.json({
+        success: true,
+        usuario: results[0]
+      });
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar perfil:', error);
+    res.json({ success: false, message: 'Erro interno do servidor' });
+  }
+});
+
+// Atualizar perfil (nome e email)
+app.put('/api/perfil/:id_usuario', (req, res) => {
+  try {
+    const { id_usuario } = req.params;
+    const { nome, email } = req.body;
+
+    if (!nome || !email) {
+      return res.json({ success: false, message: 'Nome e email são obrigatórios' });
+    }
+
+    // Verificar se email já está em uso por outro usuário
+    const checkEmailQuery = 'SELECT id_usuario FROM Usuario WHERE email = ? AND id_usuario != ?';
+    db.query(checkEmailQuery, [email, id_usuario], (err, results) => {
+      if (err) {
+        console.error('Erro ao verificar email:', err);
+        return res.json({ success: false, message: 'Erro interno do servidor' });
+      }
+
+      if (results.length > 0) {
+        return res.json({ success: false, message: 'Este email já está em uso' });
+      }
+
+      const updateQuery = 'UPDATE Usuario SET nome = ?, email = ? WHERE id_usuario = ?';
+      db.query(updateQuery, [nome, email, id_usuario], (err, result) => {
+        if (err) {
+          console.error('Erro ao atualizar perfil:', err);
+          return res.json({ success: false, message: 'Erro ao atualizar perfil' });
+        }
+
+        res.json({
+          success: true,
+          message: 'Perfil atualizado com sucesso!',
+          usuario: { nome, email }
+        });
+      });
+    });
+
+  } catch (error) {
+    console.error('Erro ao atualizar perfil:', error);
+    res.json({ success: false, message: 'Erro interno do servidor' });
+  }
+});
+
+// Upload de foto de perfil
+app.post('/api/perfil/:id_usuario/foto', upload.single('foto'), (req, res) => {
+  try {
+    const { id_usuario } = req.params;
+
+    if (!req.file) {
+      return res.json({ success: false, message: 'Nenhuma foto enviada' });
+    }
+
+    const foto_url = `/uploads/${req.file.filename}`;
+
+    // Buscar foto antiga para deletar
+    db.query('SELECT foto_perfil FROM Usuario WHERE id_usuario = ?', [id_usuario], (err, results) => {
+      if (err) {
+        console.error('Erro ao buscar foto antiga:', err);
+      }
+
+      // Deletar foto antiga se existir
+      if (results.length > 0 && results[0].foto_perfil) {
+        const oldPhotoPath = path.join(__dirname, results[0].foto_perfil);
+        if (fs.existsSync(oldPhotoPath)) {
+          fs.unlinkSync(oldPhotoPath);
+        }
+      }
+
+      // Atualizar com nova foto
+      const updateQuery = 'UPDATE Usuario SET foto_perfil = ? WHERE id_usuario = ?';
+      db.query(updateQuery, [foto_url, id_usuario], (err, result) => {
+        if (err) {
+          console.error('Erro ao atualizar foto:', err);
+          return res.json({ success: false, message: 'Erro ao atualizar foto' });
+        }
+
+        res.json({
+          success: true,
+          message: 'Foto atualizada com sucesso!',
+          foto_url: foto_url
+        });
+      });
+    });
+
+  } catch (error) {
+    console.error('Erro ao fazer upload de foto:', error);
+    res.json({ success: false, message: 'Erro interno do servidor' });
+  }
+});
+
+// Remover foto de perfil
+app.delete('/api/perfil/:id_usuario/foto', (req, res) => {
+  try {
+    const { id_usuario } = req.params;
+
+    db.query('SELECT foto_perfil FROM Usuario WHERE id_usuario = ?', [id_usuario], (err, results) => {
+      if (err || results.length === 0) {
+        return res.json({ success: false, message: 'Erro ao buscar foto' });
+      }
+
+      const foto_perfil = results[0].foto_perfil;
+
+      if (foto_perfil) {
+        const filePath = path.join(__dirname, foto_perfil);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
+
+      db.query('UPDATE Usuario SET foto_perfil = NULL WHERE id_usuario = ?', [id_usuario], (err) => {
+        if (err) {
+          console.error('Erro ao remover foto:', err);
+          return res.json({ success: false, message: 'Erro ao remover foto' });
+        }
+
+        res.json({
+          success: true,
+          message: 'Foto removida com sucesso!'
+        });
+      });
+    });
+
+  } catch (error) {
+    console.error('Erro ao remover foto:', error);
+    res.json({ success: false, message: 'Erro interno do servidor' });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Servidor rodando na porta ${port}`);
 });

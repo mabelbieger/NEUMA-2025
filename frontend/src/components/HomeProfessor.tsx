@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import BotaoPerfil from './BotaoPerfil';
 
 const API_URL = 'http://localhost:3001/api';
 
@@ -149,7 +150,7 @@ export default function HomeProfessor() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb'}}><BotaoPerfil />
       {/* Header */}
       <header style={{ backgroundColor: '#150B53', padding: '2rem 0' }}>
         <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '0 1rem', textAlign: 'center' }}>
@@ -432,7 +433,7 @@ export default function HomeProfessor() {
       </section>
 
       {/* Footer */}
-      <footer style={{ backgroundColor: '#CED0FF', padding: '1rem 1rem' }}>
+      <footer style={{ backgroundColor: '#150B53', padding: '1rem 1rem' }}>
         <div style={{
           maxWidth: '72rem',
           margin: '0 auto',
@@ -446,12 +447,12 @@ export default function HomeProfessor() {
             <h3 style={{
               fontSize: '1.25rem',
               fontWeight: 'bold',
-              color: '#111827',
+              color: '#ffffffff',
               marginBottom: '1rem'
             }}>
               Contato
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#374151', lineHeight: '1.5' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#b6b9ffff', lineHeight: '1.5' }}>
               <p><strong>Instagram:</strong><br />@projeto_neuma</p>
               <p><strong>E-mail:</strong><br />projetoneuma@gmail.com</p>
             </div>
@@ -461,12 +462,12 @@ export default function HomeProfessor() {
             <h3 style={{
               fontSize: '1.25rem',
               fontWeight: 'bold',
-              color: '#111827',
+              color: '#ffffffff',
               marginBottom: '1rem'
             }}>
               Desenvolvedoras
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#374151', lineHeight: '1.5' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#b6b9ffff', lineHeight: '1.5' }}>
               <p>Mariana Machado Welter <br /> Marina Isabel Bieger</p>
             </div>
           </div>

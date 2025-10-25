@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-
+import BotaoPerfil from './BotaoPerfil';
 const API_URL = 'http://localhost:3001/api';
 
 interface Turma {
@@ -281,7 +281,7 @@ export default function MinhasTurmas() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}> <BotaoPerfil />
       <header style={{ backgroundColor: '#150B53', padding: '2rem 0' }}>
         <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '0 1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -850,7 +850,7 @@ export default function MinhasTurmas() {
                         cursor: 'pointer',
                         borderRadius: '0.25rem',
                         marginBottom: '0.25rem',
-                        backgroundColor: novaAtividade.turmas_selecionadas.includes(turma.id_turma) ? '#f0f9ff' : 'transparent'
+                        backgroundColor: novaAtividade.turmas_selecionadas.includes(turma.id_turma) ? '#f0f9ff' : 'transparent', color: 'black'
                       }}
                     >
                       <input
@@ -1084,7 +1084,7 @@ export default function MinhasTurmas() {
         </div>
       )}
 
-      <footer style={{ backgroundColor: '#CED0FF', padding: '2rem 1rem', marginTop: '4rem' }}>
+      <footer style={{ backgroundColor: '#150B53', padding: '2rem 1rem', marginTop: '4rem' }}>
         <div style={{
           maxWidth: '72rem',
           margin: '0 auto',
@@ -1098,12 +1098,12 @@ export default function MinhasTurmas() {
             <h3 style={{
               fontSize: '1.25rem',
               fontWeight: 'bold',
-              color: '#111827',
+              color: '#ffffffff',
               marginBottom: '1rem'
             }}>
               Contato
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#374151', lineHeight: '1.5' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#b6b9ffff', lineHeight: '1.5' }}>
               <p><strong>Instagram:</strong><br />@projeto_neuma</p>
               <p><strong>E-mail:</strong><br />projetoneuma@gmail.com</p>
             </div>
@@ -1113,12 +1113,12 @@ export default function MinhasTurmas() {
             <h3 style={{
               fontSize: '1.25rem',
               fontWeight: 'bold',
-              color: '#111827',
+              color: '#ffffffff',
               marginBottom: '1rem'
             }}>
               Desenvolvedoras
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#374151', lineHeight: '1.5' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#b6b9ffff', lineHeight: '1.5' }}>
               <p>Mariana Machado Welter <br /> Marina Isabel Bieger</p>
             </div>
           </div>
