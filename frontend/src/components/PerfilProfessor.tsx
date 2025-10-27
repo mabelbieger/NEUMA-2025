@@ -376,7 +376,7 @@ export default function PerfilProfessor() {
                       fontWeight: '500'
                     }}
                   >
-                    {usuario.foto_perfil ? '📷 Alterar Foto' : '📷 Adicionar Foto'}
+                    {usuario.foto_perfil ? 'Alterar Foto' : 'Adicionar Foto'}
                   </button>
 
                   {usuario.foto_perfil && (
@@ -393,7 +393,7 @@ export default function PerfilProfessor() {
                         fontWeight: '500'
                       }}
                     >
-                      🗑️ Remover Foto
+                      Remover Foto
                     </button>
                   )}
                 </div>
@@ -435,7 +435,7 @@ export default function PerfilProfessor() {
                       fontWeight: '500'
                     }}
                   >
-                    ✏️ Editar
+                    Editar
                   </button>
                 )}
               </div>
@@ -584,7 +584,7 @@ export default function PerfilProfessor() {
                       fontWeight: '600',
                       color: '#150B53'
                     }}>
-                      👨‍🏫 Professor
+                      Professor
                     </p>
                   </div>
                 </div>
