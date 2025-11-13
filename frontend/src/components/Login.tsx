@@ -65,7 +65,7 @@ export default function Login() {
       window.location.href = '/home-professor';
     } else {
       try {
-        const alunoResponse = await fetch(`http://localhost:3001/api/aluno/${user.id}`);
+        const alunoResponse = await fetch(`https://neuma-2025.onrender.com/api/aluno/${user.id}`);
         const alunoData = await alunoResponse.json();
         
         if (alunoData.success && alunoData.aluno && alunoData.aluno.teste_realizado) {
@@ -92,7 +92,7 @@ export default function Login() {
     setIsLoading(true);
    
     try {
-      const response = await fetch('http://localhost:3001/api/login', {
+      const response = await fetch('https://neuma-2025.onrender.com/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ export default function Login() {
       setIsRecoveryLoading(true);
       
       try {
-        const response = await fetch('http://localhost:3001/api/solicitar-troca-senha', {
+        const response = await fetch('https://neuma-2025.onrender.com/api/solicitar-troca-senha', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -174,7 +174,7 @@ export default function Login() {
       setIsRecoveryLoading(true);
       
       try {
-        const response = await fetch('http://localhost:3001/api/verificar-token', {
+        const response = await fetch('https://neuma-2025.onrender.com/api/verificar-token', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -218,7 +218,7 @@ export default function Login() {
       setIsRecoveryLoading(true);
       
       try {
-        const response = await fetch('http://localhost:3001/api/trocar-senha', {
+        const response = await fetch('https://neuma-2025.onrender.com/api/trocar-senha', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
