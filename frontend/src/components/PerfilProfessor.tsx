@@ -20,6 +20,123 @@ interface Turma {
   codigo_acesso: string;
 }
 
+interface AlertModalProps {
+  message: string;
+  onClose: () => void;
+}
+
+const AlertModal: React.FC<AlertModalProps> = ({ message, onClose }) => (
+  <div style={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999
+  }}>
+    <div style={{
+      backgroundColor: 'white',
+      padding: '2rem',
+      borderRadius: '1rem',
+      maxWidth: '400px',
+      width: '90%',
+      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+    }}>
+      <p style={{ marginBottom: '1.5rem', fontSize: '1rem', color: '#111827', textAlign: 'center' }}>
+        {message}
+      </p>
+      <button
+        onClick={onClose}
+        style={{
+          width: '100%',
+          backgroundColor: '#150B53',
+          color: 'white',
+          padding: '0.75rem',
+          borderRadius: '0.5rem',
+          border: 'none',
+          cursor: 'pointer',
+          fontSize: '1rem',
+          fontWeight: '600'
+        }}
+      >
+        OK
+      </button>
+    </div>
+  </div>
+);
+
+interface ConfirmModalProps {
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+const ConfirmModal: React.FC<ConfirmModalProps> = ({ message, onConfirm, onCancel }) => (
+  <div style={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999
+  }}>
+    <div style={{
+      backgroundColor: 'white',
+      padding: '2rem',
+      borderRadius: '1rem',
+      maxWidth: '400px',
+      width: '90%',
+      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+    }}>
+      <p style={{ marginBottom: '1.5rem', fontSize: '1rem', color: '#111827', textAlign: 'center' }}>
+        {message}
+      </p>
+      <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <button
+          onClick={onCancel}
+          style={{
+            flex: 1,
+            backgroundColor: '#6b7280',
+            color: 'white',
+            padding: '0.75rem',
+            borderRadius: '0.5rem',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '1rem',
+            fontWeight: '600'
+          }}
+        >
+          Cancelar
+        </button>
+        <button
+          onClick={onConfirm}
+          style={{
+            flex: 1,
+            backgroundColor: '#dc2626',
+            color: 'white',
+            padding: '0.75rem',
+            borderRadius: '0.5rem',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '1rem',
+            fontWeight: '600'
+          }}
+        >
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
 export default function PerfilProfessor() {
   const navigate = useNavigate();
   const [usuario, setUsuario] = useState<Usuario | null>(null);
@@ -28,6 +145,8 @@ export default function PerfilProfessor() {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ nome: '', email: '' });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   useEffect(() => {
     const loggedUser = localStorage.getItem('loggedUser');
@@ -40,8 +159,8 @@ export default function PerfilProfessor() {
     const user = JSON.parse(loggedUser);
     
     if (user.tipo !== 'Professor' && user.tipo_usuario !== 'Professor') {
-      alert('Acesso restrito a professores');
-      navigate('/home');
+      setAlertMessage('Acesso restrito a professores');
+      setTimeout(() => navigate('/home'), 2000);
       return;
     }
 
@@ -50,7 +169,6 @@ export default function PerfilProfessor() {
 
   const carregarDados = async (idUsuario: number) => {
     try {
-      // Buscar dados do usuário
       const perfilResponse = await axios.get(`${API_URL}/perfil/${idUsuario}`);
       
       if (perfilResponse.data.success) {
@@ -58,12 +176,10 @@ export default function PerfilProfessor() {
         setUsuario(userData);
         setEditData({ nome: userData.nome, email: userData.email });
 
-        // Atualizar localStorage com foto
         const loggedUser = JSON.parse(localStorage.getItem('loggedUser') || '{}');
         loggedUser.foto_perfil = userData.foto_perfil;
         localStorage.setItem('loggedUser', JSON.stringify(loggedUser));
 
-        // Buscar turmas do professor
         if (userData.id_professor) {
           const turmasResponse = await axios.get(`${API_URL}/turmas/professor/${userData.id_professor}`);
           if (turmasResponse.data.success) {
@@ -73,7 +189,7 @@ export default function PerfilProfessor() {
       }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
-      alert('Erro ao carregar dados do perfil');
+      setAlertMessage('Erro ao carregar dados do perfil');
     } finally {
       setIsLoading(false);
     }
@@ -88,10 +204,9 @@ export default function PerfilProfessor() {
       const response = await axios.put(`${API_URL}/perfil/${usuario.id_usuario}`, editData);
 
       if (response.data.success) {
-        alert('Perfil atualizado com sucesso!');
+        setAlertMessage('Perfil atualizado com sucesso!');
         setUsuario({ ...usuario, nome: editData.nome, email: editData.email });
         
-        // Atualizar localStorage
         const loggedUser = JSON.parse(localStorage.getItem('loggedUser') || '{}');
         loggedUser.nome = editData.nome;
         loggedUser.email = editData.email;
@@ -99,20 +214,19 @@ export default function PerfilProfessor() {
         
         setIsEditing(false);
       } else {
-        alert(response.data.message || 'Erro ao atualizar perfil');
+        setAlertMessage(response.data.message || 'Erro ao atualizar perfil');
       }
     } catch (error: any) {
       console.error('Erro ao atualizar perfil:', error);
-      alert(error.response?.data?.message || 'Erro ao atualizar perfil');
+      setAlertMessage(error.response?.data?.message || 'Erro ao atualizar perfil');
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validar tamanho (máx 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert('A foto deve ter no máximo 5MB');
+        setAlertMessage('A foto deve ter no máximo 5MB');
         return;
       }
       setSelectedFile(file);
@@ -133,58 +247,61 @@ export default function PerfilProfessor() {
       );
 
       if (response.data.success) {
-        alert('Foto atualizada com sucesso!');
+        setAlertMessage('Foto atualizada com sucesso!');
         setUsuario({ ...usuario, foto_perfil: response.data.foto_url });
         
-        // Atualizar localStorage
         const loggedUser = JSON.parse(localStorage.getItem('loggedUser') || '{}');
         loggedUser.foto_perfil = response.data.foto_url;
         localStorage.setItem('loggedUser', JSON.stringify(loggedUser));
         
         setSelectedFile(null);
-        window.location.reload(); // Recarregar para atualizar o botão flutuante
+        window.location.reload();
       } else {
-        alert(response.data.message || 'Erro ao atualizar foto');
+        setAlertMessage(response.data.message || 'Erro ao atualizar foto');
       }
     } catch (error) {
       console.error('Erro ao fazer upload:', error);
-      alert('Erro ao fazer upload da foto');
+      setAlertMessage('Erro ao fazer upload da foto');
     }
   };
 
   const handleRemoverFoto = async () => {
     if (!usuario || !usuario.foto_perfil) return;
 
-    if (!window.confirm('Tem certeza que deseja remover sua foto de perfil?')) {
-      return;
-    }
+    setConfirmModal({
+      message: 'Tem certeza que deseja remover sua foto de perfil?',
+      onConfirm: async () => {
+        try {
+          const response = await axios.delete(`${API_URL}/perfil/${usuario.id_usuario}/foto`);
 
-    try {
-      const response = await axios.delete(`${API_URL}/perfil/${usuario.id_usuario}/foto`);
-
-      if (response.data.success) {
-        alert('Foto removida com sucesso!');
-        setUsuario({ ...usuario, foto_perfil: null });
-        
-        // Atualizar localStorage
-        const loggedUser = JSON.parse(localStorage.getItem('loggedUser') || '{}');
-        loggedUser.foto_perfil = null;
-        localStorage.setItem('loggedUser', JSON.stringify(loggedUser));
-        
-        window.location.reload();
+          if (response.data.success) {
+            setAlertMessage('Foto removida com sucesso!');
+            setUsuario({ ...usuario, foto_perfil: null });
+            
+            const loggedUser = JSON.parse(localStorage.getItem('loggedUser') || '{}');
+            loggedUser.foto_perfil = null;
+            localStorage.setItem('loggedUser', JSON.stringify(loggedUser));
+            
+            window.location.reload();
+          }
+        } catch (error) {
+          console.error('Erro ao remover foto:', error);
+          setAlertMessage('Erro ao remover foto');
+        }
+        setConfirmModal(null);
       }
-    } catch (error) {
-      console.error('Erro ao remover foto:', error);
-      alert('Erro ao remover foto');
-    }
+    });
   };
 
   const handleLogout = () => {
-    if (window.confirm('Tem certeza que deseja sair?')) {
-      localStorage.removeItem('loggedUser');
-      localStorage.removeItem('isAuthenticated');
-      navigate('/login');
-    }
+    setConfirmModal({
+      message: 'Tem certeza que deseja sair?',
+      onConfirm: () => {
+        localStorage.removeItem('loggedUser');
+        localStorage.removeItem('isAuthenticated');
+        navigate('/login');
+      }
+    });
   };
 
   if (isLoading) {
@@ -206,6 +323,21 @@ export default function PerfilProfessor() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
       <BotaoPerfil />
+      
+      {alertMessage && (
+        <AlertModal 
+          message={alertMessage} 
+          onClose={() => setAlertMessage(null)} 
+        />
+      )}
+      
+      {confirmModal && (
+        <ConfirmModal
+          message={confirmModal.message}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(null)}
+        />
+      )}
       
       <header style={{ backgroundColor: '#150B53', padding: '2rem 0' }}>
         <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '0 1rem' }}>
@@ -258,7 +390,7 @@ export default function PerfilProfessor() {
           </div>
         </div>
       </header>
-
+,mm
       <main style={{ padding: '3rem 0' }}>
         <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '0 1rem' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
@@ -278,7 +410,6 @@ export default function PerfilProfessor() {
             gap: '2rem',
             marginBottom: '3rem'
           }}>
-            {/* Card de Foto de Perfil */}
             <div style={{
               backgroundColor: 'white',
               padding: '2rem',
@@ -297,16 +428,16 @@ export default function PerfilProfessor() {
               </h2>
 
               <div style={{
-                width: '150px',
-                height: '150px',
+                width: '180px',
+                height: '180px',
                 margin: '0 auto 1.5rem',
                 borderRadius: '50%',
                 backgroundColor: '#150B53',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '60px',
-                border: '4px solid #CED0FF',
+                fontSize: '70px',
+                border: '3px solid #CED0FF',
                 backgroundImage: usuario.foto_perfil ? `url(${BASE_URL}${usuario.foto_perfil})` : 'none',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
@@ -404,7 +535,6 @@ export default function PerfilProfessor() {
               </p>
             </div>
 
-            {/* Card de Informações */}
             <div style={{
               backgroundColor: 'white',
               padding: '2rem',
@@ -592,7 +722,6 @@ export default function PerfilProfessor() {
             </div>
           </div>
 
-          {/* Minhas Turmas */}
           <div style={{
             backgroundColor: 'white',
             padding: '2rem',

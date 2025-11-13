@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { ChevronRight, ChevronLeft, Eye, Headphones, BookOpen, Hand, BarChart3 } from 'lucide-react';
+import { ChevronRight, ChevronLeft, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Resultado from './resultado';
-
 
 interface Question {
   id: number;
@@ -14,7 +13,6 @@ interface Question {
     d: string;
   };
 }
-
 
 const questions: Question[] = [
   {
@@ -119,9 +117,7 @@ const questions: Question[] = [
   }
 ];
 
-
 type Answer = 'a' | 'b' | 'c' | 'd' | null;
-
 
 export default function Teste() {
   const navigate = useNavigate();
@@ -130,13 +126,11 @@ export default function Teste() {
   const [showResults, setShowResults] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
 
-
   const handleAnswer = (questionIndex: number, answer: Answer) => {
     const newAnswers = [...answers];
     newAnswers[questionIndex] = answer;
     setAnswers(newAnswers);
   };
-
 
   const goToNextSection = () => {
     if (currentSection < questions.length - 1) {
@@ -144,23 +138,19 @@ export default function Teste() {
     }
   };
 
-
   const goToPreviousSection = () => {
     if (currentSection > 0) {
       setCurrentSection(currentSection - 1);
     }
   };
 
-
   const canGoNext = () => {
     return answers[currentSection] !== null;
   };
 
-
   const finishTest = () => {
     setShowResults(true);
   };
-
 
   const calculateResults = () => {
     const scores = { V: 0, A: 0, R: 0, K: 0 };
@@ -172,50 +162,37 @@ export default function Teste() {
       else if (answer === 'd') scores.K++;
     });
 
-
     return scores;
   };
 
-
-  const restartTest = () => {
-    setCurrentSection(0);
-    setAnswers(new Array(10).fill(null));
-    setShowResults(false);
-    setIsStarted(false);
+  const handleHomeAluno = () => {
+    navigate('/home-aluno');
   };
 
-
-  const goBackToHome = () => {
-    navigate('/home');
+  const handleMinhasTurmas = () => {
+    navigate('/MinhasTurmas');
   };
-
 
   if (showResults) {
-    return <Resultado scores={calculateResults()} onRestart={restartTest} onBackToHome={goBackToHome} />;
+    return <Resultado scores={calculateResults()} onBackToHome={handleHomeAluno} onMinhasTurmas={handleMinhasTurmas} />;
   }
-
 
   if (!isStarted) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
-        <header style={{ backgroundColor: '#150B53', padding: '2rem 0' }}>
-          <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '0 1rem', textAlign: 'center' }}>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <img
-                src="/imagens/logo.png"
-                alt="Logo"
-                style={{
-                  width: '8rem',
-                  height: '8rem',
-                  margin: '0 auto',
-                  display: 'block',
-                  objectFit: 'contain'
-                }}
-              />
-            </div>
+        <header style={{ backgroundColor: '#150B53', padding: '1rem 0', position: 'relative', height: '80px' }}>
+          <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
+            <img
+              src="/imagens/logo.png"
+              alt="Logo"
+              style={{
+                width: '6rem',
+                height: '6rem',
+                objectFit: 'contain'
+              }}
+            />
           </div>
         </header>
-
 
         <div style={{ padding: '4rem 1rem' }}>
           <div style={{
@@ -229,7 +206,6 @@ export default function Teste() {
             textAlign: 'center'
           }}>
             <div style={{ marginBottom: '2rem' }}>
-             
               <h1 style={{
                 fontSize: '2.25rem',
                 fontWeight: 'bold',
@@ -246,9 +222,6 @@ export default function Teste() {
                 Descubra seu estilo de aprendizagem preferido e potencialize seus estudos em matemática!
               </p>
             </div>
-
-
-
 
             <div style={{
               backgroundColor: '#CED0FF',
@@ -308,7 +281,6 @@ export default function Teste() {
               </ul>
             </div>
 
-
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button
                 onClick={() => setIsStarted(true)}
@@ -335,29 +307,6 @@ export default function Teste() {
               >
                 Iniciar Teste
               </button>
-             
-              <button
-                onClick={goBackToHome}
-                style={{
-                  backgroundColor: '#f3f4f6',
-                  color: '#374151',
-                  padding: '1rem 2rem',
-                  borderRadius: '0.75rem',
-                  fontWeight: '600',
-                  fontSize: '1.125rem',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#e5e7eb';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f3f4f6';
-                }}
-              >
-                Voltar ao Início
-              </button>
             </div>
           </div>
         </div>
@@ -365,29 +314,24 @@ export default function Teste() {
     );
   }
 
-
   const currentQuestion = questions[currentSection];
   const progress = ((currentSection + 1) / questions.length) * 100;
 
-
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
-      <header style={{ backgroundColor: '#150B53', padding: '1.5rem 0' }}>
-        <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '0 1rem', textAlign: 'center' }}>
+      <header style={{ backgroundColor: '#150B53', padding: '1rem 0', position: 'relative', height: '80px' }}>
+        <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
           <img
             src="/imagens/logo.png"
             alt="Logo"
             style={{
               width: '6rem',
               height: '6rem',
-              margin: '0 auto',
-              display: 'block',
               objectFit: 'contain'
             }}
           />
         </div>
       </header>
-
 
       <div style={{ padding: '2rem 1rem' }}>
         <div style={{ maxWidth: '56rem', margin: '0 auto' }}>
@@ -432,7 +376,6 @@ export default function Teste() {
             </div>
           </div>
 
-
           <div style={{
             backgroundColor: 'white',
             borderRadius: '1rem',
@@ -450,7 +393,6 @@ export default function Teste() {
                 {currentQuestion.question}
               </h2>
             </div>
-
 
             <div style={{ marginBottom: '2rem' }}>
               {Object.entries(currentQuestion.options).map(([key, option]) => (
@@ -506,7 +448,6 @@ export default function Teste() {
               ))}
             </div>
 
-
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -544,7 +485,6 @@ export default function Teste() {
                 <ChevronLeft style={{ width: '1rem', height: '1rem' }} />
                 <span>Anterior</span>
               </button>
-
 
               {currentSection === questions.length - 1 ? (
                 <button
@@ -617,7 +557,6 @@ export default function Teste() {
               )}
             </div>
           </div>
-
 
           <div style={{
             display: 'flex',

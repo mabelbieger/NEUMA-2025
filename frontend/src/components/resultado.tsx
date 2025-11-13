@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { Eye, Headphones, BookOpen, Hand, Users, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, Headphones, BookOpen, Hand, RotateCcw, Download, Share2, Home } from 'lucide-react';
-
 
 interface ResultadoProps {
   scores: {
@@ -10,15 +9,19 @@ interface ResultadoProps {
     R: number;
     K: number;
   };
-  onRestart: () => void;
   onBackToHome: () => void;
+  onMinhasTurmas: () => void;
 }
 
-
-export default function Resultado({ scores, onRestart, onBackToHome }: ResultadoProps) {
+export default function Resultado({ scores, onBackToHome, onMinhasTurmas }: ResultadoProps) {
+  const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
-  const navigate = useNavigate();
+  const [showTurmaModal, setShowTurmaModal] = useState(false);
+  const [codigoTurma, setCodigoTurma] = useState('');
+  const [turmaMessage, setTurmaMessage] = useState('');
+  const [isJoiningTurma, setIsJoiningTurma] = useState(false);
+  const [hasJoinedTurma, setHasJoinedTurma] = useState(false);
 
   const saveResultsToDatabase = async () => {
     try {
@@ -68,6 +71,62 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleJoinTurma = async () => {
+    if (!codigoTurma.trim()) {
+      setTurmaMessage('Por favor, digite o código da turma');
+      return;
+    }
+
+    try {
+      setIsJoiningTurma(true);
+      setTurmaMessage('');
+
+      const loggedUserData = localStorage.getItem('loggedUser');
+      if (!loggedUserData) {
+        setTurmaMessage('Erro: Usuário não encontrado');
+        return;
+      }
+
+      const user = JSON.parse(loggedUserData);
+
+      const response = await fetch('http://localhost:3001/api/entrar-turma', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id_usuario: user.id,
+          codigo_acesso: codigoTurma.trim()
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setTurmaMessage('✓ Você entrou na turma com sucesso!');
+        setHasJoinedTurma(true);
+        setTimeout(() => {
+          setShowTurmaModal(false);
+          setCodigoTurma('');
+          navigate('/personalizada');
+        }, 2000);
+      } else {
+        setTurmaMessage(result.message || 'Erro ao entrar na turma');
+      }
+
+    } catch (error) {
+      console.error('Erro ao entrar na turma:', error);
+      setTurmaMessage('Erro ao conectar com o servidor');
+    } finally {
+      setIsJoiningTurma(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('loggedUser');
+    navigate('/login');
   };
 
   useEffect(() => {
@@ -198,20 +257,38 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
-      {/* Header */}
-      <header style={{ backgroundColor: '#150B53', padding: '1.5rem 0' }}>
-        <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '0 1rem', textAlign: 'center' }}>
+      <header style={{ backgroundColor: '#150B53', padding: '1rem 0', position: 'relative', height: '80px' }}>
+        <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
           <img
             src="/imagens/logo.png"
             alt="Logo"
             style={{
               width: '6rem',
               height: '6rem',
-              margin: '0 auto',
-              display: 'block',
               objectFit: 'contain'
             }}
           />
+        </div>
+        
+        <div style={{ position: 'absolute', right: '2rem', top: '50%', transform: 'translateY(-50%)' }}>
+          <button
+            onClick={handleLogout}
+            style={{
+              backgroundColor: 'transparent',
+              border: '1px solid white',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '0.5rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.875rem'
+            }}
+          >
+            <LogOut size={16} />
+            Sair
+          </button>
         </div>
       </header>
 
@@ -295,63 +372,163 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
 
             <div style={{
               display: 'flex',
-              flexWrap: 'wrap',
               justifyContent: 'center',
               gap: '1rem'
             }}>
               <button
-                onClick={onRestart}
+                onClick={() => setShowTurmaModal(true)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.5rem',
-                  backgroundColor: '#6b7280',
+                  backgroundColor: '#16a34a',
                   color: 'white',
-                  padding: '0.75rem 1.5rem',
+                  padding: '0.75rem 2rem',
                   borderRadius: '0.75rem',
                   fontWeight: '500',
                   border: 'none',
                   cursor: 'pointer',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s',
+                  fontSize: '1.125rem'
                 }}
                 onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#4b5563';
+                  e.currentTarget.style.backgroundColor = '#15803d';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
                 }}
                 onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = '#6b7280';
+                  e.currentTarget.style.backgroundColor = '#16a34a';
+                  e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
-                <RotateCcw style={{ width: '1rem', height: '1rem' }} />
-                <span>Refazer Teste</span>
-              </button>
-             
-              <button
-                onClick={onBackToHome}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  backgroundColor: '#150B53',
-                  color: 'white',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '0.75rem',
-                  fontWeight: '500',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#1a0f5c';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = '#150B53';
-                }}
-              >
-                <Home style={{ width: '1rem', height: '1rem' }} />
-                <span>Voltar ao Início</span>
+                <Users style={{ width: '1.25rem', height: '1.25rem' }} />
+                <span>Entrar em uma Turma</span>
               </button>
             </div>
           </div>
+
+          {showTurmaModal && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+              padding: '1rem'
+            }}>
+              <div style={{
+                backgroundColor: 'white',
+                borderRadius: '1rem',
+                padding: '2rem',
+                maxWidth: '500px',
+                width: '100%',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+              }}>
+                <h2 style={{
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold',
+                  color: '#111827',
+                  marginBottom: '1rem',
+                  textAlign: 'center'
+                }}>
+                  Entrar em uma Turma
+                </h2>
+                
+                <p style={{
+                  color: '#6b7280',
+                  marginBottom: '1.5rem',
+                  textAlign: 'center'
+                }}>
+                  Digite o código de acesso fornecido pelo seu professor
+                </p>
+
+                <input
+                  type="text"
+                  value={codigoTurma}
+                  onChange={(e) => setCodigoTurma(e.target.value.toUpperCase())}
+                  placeholder="Ex: ABC123"
+                  maxLength={10}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '0.5rem',
+                    border: '2px solid #d1d5db',
+                    fontSize: '1rem',
+                    textAlign: 'center',
+                    textTransform: 'uppercase',
+                    marginBottom: '1rem'
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleJoinTurma();
+                    }
+                  }}
+                />
+
+                {turmaMessage && (
+                  <div style={{
+                    backgroundColor: turmaMessage.includes('✓') ? '#d1fae5' : '#fee2e2',
+                    color: turmaMessage.includes('✓') ? '#065f46' : '#991b1b',
+                    padding: '0.75rem',
+                    borderRadius: '0.5rem',
+                    marginBottom: '1rem',
+                    fontSize: '0.875rem',
+                    textAlign: 'center'
+                  }}>
+                    {turmaMessage}
+                  </div>
+                )}
+
+                <div style={{
+                  display: 'flex',
+                  gap: '1rem',
+                  justifyContent: 'center'
+                }}>
+                  <button
+                    onClick={handleJoinTurma}
+                    disabled={isJoiningTurma || !codigoTurma.trim()}
+                    style={{
+                      backgroundColor: isJoiningTurma || !codigoTurma.trim() ? '#9ca3af' : '#16a34a',
+                      color: 'white',
+                      padding: '0.75rem 1.5rem',
+                      borderRadius: '0.5rem',
+                      fontWeight: '500',
+                      border: 'none',
+                      cursor: isJoiningTurma || !codigoTurma.trim() ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {isJoiningTurma ? 'Entrando...' : 'Entrar'}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setShowTurmaModal(false);
+                      setCodigoTurma('');
+                      setTurmaMessage('');
+                    }}
+                    disabled={isJoiningTurma}
+                    style={{
+                      backgroundColor: '#6b7280',
+                      color: 'white',
+                      padding: '0.75rem 1.5rem',
+                      borderRadius: '0.5rem',
+                      fontWeight: '500',
+                      border: 'none',
+                      cursor: isJoiningTurma ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div style={{
             backgroundColor: 'white',
@@ -369,7 +546,7 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
               Distribuição dos seus Estilos
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              {sortedStyles.map((style, index) => {
+              {sortedStyles.map((style) => {
                 const styleInfo = getStyleInfo(style.code);
                 const percentage = getPercentage(style.score);
                
@@ -552,51 +729,63 @@ export default function Resultado({ scores, onRestart, onBackToHome }: Resultado
               </div>
             </div>
           )}
-
-          <div style={{
-            background: '#150B53',
-            borderRadius: '1rem',
-            boxShadow: '0 1px 7px rgba(57, 0, 227, 0.78)',
-            padding: '2rem',
-            marginTop: '1.5rem',
-            color: 'white',
-            textAlign: 'center'
-          }}>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '2rem' }}>
-              Siga em frente!
-            </h3>
-           
-            <div style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              gap: '1rem'
-            }}>
-              <button
-                style={{
-                  backgroundColor: 'white',
-                  color: '#150B53',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '0.75rem',
-                  fontWeight: '600',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onClick={() => navigate('/personalizada')}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f8fafc';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = 'white';
-                }}
-              >
-                Ir para a sua página personalizada
-              </button>
-            </div>
-          </div>
         </div>
       </div>
+
+      <footer style={{ backgroundColor: '#150B53', padding: '1rem 1rem' }}>
+        <div style={{
+          maxWidth: '72rem',
+          margin: '0 auto',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: '3rem',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ flex: '1 1 250px', minWidth: '250px' }}>
+            <h3 style={{
+              fontSize: '1.25rem',
+              fontWeight: 'bold',
+              color: '#ffffffff',
+              marginBottom: '1rem'
+            }}>
+              Contato
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#b6b9ffff', lineHeight: '1.5' }}>
+              <p><strong>Instagram:</strong><br />@projeto_neuma</p>
+              <p><strong>E-mail:</strong><br />projetoneuma@gmail.com</p>
+            </div>
+          </div>
+
+          <div style={{ flex: '1 1 250px', minWidth: '250px' }}>
+            <h3 style={{
+              fontSize: '1.25rem',
+              fontWeight: 'bold',
+              color: '#ffffffff',
+              marginBottom: '1rem'
+            }}>
+              Desenvolvedoras
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#b6b9ffff', lineHeight: '1.5' }}>
+              <p>Mariana Machado Welter <br /> Marina Isabel Bieger</p>
+            </div>
+          </div>
+
+          <div style={{ flex: '0 0 auto', alignSelf: 'center' }}>
+            <img
+              src="/imagens/logo.png"
+              alt="Logo"
+              style={{
+                width: '8rem',
+                height: '8rem',
+                objectFit: 'contain',
+                display: 'block',
+                margin: '0 auto'
+              }}
+            />
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

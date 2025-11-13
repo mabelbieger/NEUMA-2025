@@ -1,13 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import BotaoPerfil from './BotaoPerfil';
+import { LogOut } from 'lucide-react';
 
 const API_URL = 'http://localhost:3001/api';
+const BASE_URL = 'http://localhost:3001';
 
 interface TurmaData {
   nome_turma: string;
   codigo_acesso: string;
+}
+
+interface UserData {
+  id_professor: number;
+  id_usuario: number;
+  nome: string;
+  email: string;
+  tipo_usuario: string;
+  foto_perfil?: string;
 }
 
 export default function HomeProfessor() {
@@ -16,6 +26,7 @@ export default function HomeProfessor() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [idProfessor, setIdProfessor] = useState<number | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [turmaData, setTurmaData] = useState<TurmaData>({
     nome_turma: '',
     codigo_acesso: ''
@@ -37,7 +48,8 @@ export default function HomeProfessor() {
       return;
     }
 
-    // Buscar id_professor se não estiver salvo
+    setUserData(user);
+    
     if (user.id_professor) {
       setIdProfessor(user.id_professor);
     } else if (user.id) {
@@ -52,15 +64,44 @@ export default function HomeProfessor() {
       if (response.data.success) {
         setIdProfessor(response.data.id_professor);
         
-        // Atualiza o localStorage com o id_professor
         const loggedUser = JSON.parse(localStorage.getItem('loggedUser') || '{}');
         loggedUser.id_professor = response.data.id_professor;
         localStorage.setItem('loggedUser', JSON.stringify(loggedUser));
+        setUserData(loggedUser);
       }
     } catch (error) {
       console.error('Erro ao buscar id_professor:', error);
     }
   };
+
+  // Função para carregar dados atualizados do perfil
+  const carregarDadosPerfil = async (idUsuario: number) => {
+    try {
+      const perfilResponse = await axios.get(`${API_URL}/perfil/${idUsuario}`);
+      
+      if (perfilResponse.data.success) {
+        const userData = perfilResponse.data.usuario;
+        setUserData(userData);
+
+        // Atualiza localStorage com dados atualizados
+        const loggedUser = JSON.parse(localStorage.getItem('loggedUser') || '{}');
+        loggedUser.foto_perfil = userData.foto_perfil;
+        loggedUser.nome = userData.nome;
+        loggedUser.email = userData.email;
+        localStorage.setItem('loggedUser', JSON.stringify(loggedUser));
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados do perfil:', error);
+    }
+  };
+
+  useEffect(() => {
+    const loggedUser = localStorage.getItem('loggedUser');
+    if (loggedUser) {
+      const user = JSON.parse(loggedUser);
+      carregarDadosPerfil(user.id);
+    }
+  }, []);
 
   const handleCreateTurmaClick = () => {
     setTurmaData({
@@ -73,6 +114,15 @@ export default function HomeProfessor() {
 
   const handleVerTurmasClick = () => {
     navigate('/MinhasTurmas');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('loggedUser');
+    navigate('/login');
+  };
+
+  const handlePerfil = () => {
+    navigate('/perfil-professor');
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,28 +199,101 @@ export default function HomeProfessor() {
     setError('');
   };
 
+  // Função para obter a URL completa da foto
+  const getFotoPerfilUrl = (fotoPath?: string) => {
+    if (!fotoPath) return null;
+    
+    // Se já for uma URL completa, retorna como está
+    if (fotoPath.startsWith('http')) {
+      return fotoPath;
+    }
+    
+    // Se for um caminho relativo, adiciona o base URL
+    return `${BASE_URL}${fotoPath.startsWith('/') ? '' : '/'}${fotoPath}`;
+  };
+
+  const fotoPerfilUrl = getFotoPerfilUrl(userData?.foto_perfil);
+
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb'}}><BotaoPerfil />
-      {/* Header */}
-      <header style={{ backgroundColor: '#150B53', padding: '2rem 0' }}>
-        <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '0 1rem', textAlign: 'center' }}>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <img 
-              src="/imagens/logo.png" 
-              alt="Logo" 
-              style={{ 
-                width: '10rem', 
-                height: '10rem', 
-                margin: '0 auto', 
-                display: 'block',
-                objectFit: 'contain'
-              }} 
-            />
+    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+      <header style={{ backgroundColor: '#150B53', padding: '1rem 0', position: 'relative', height: '80px' }}>
+        <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
+          <img 
+            src="/imagens/logo.png" 
+            alt="Logo" 
+            style={{ 
+              width: '6rem', 
+              height: '6rem',
+              objectFit: 'contain'
+            }} 
+          />
+        </div>
+        
+        <div style={{ position: 'absolute', right: '2rem', top: '50%', transform: 'translateY(-50%)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button
+              onClick={handleLogout}
+              style={{
+                backgroundColor: 'transparent',
+                border: '1px solid white',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '0.5rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontSize: '0.875rem'
+              }}
+            >
+              <LogOut size={16} />
+              Sair
+            </button>
+
+            <button
+              onClick={handlePerfil}
+              style={{
+                width: '2.5rem',
+                height: '2.5rem',
+                borderRadius: '50%',
+                backgroundColor: fotoPerfilUrl ? 'transparent' : '#CED0FF',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#150B53',
+                fontSize: '1rem',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                overflow: 'hidden',
+                padding: 0
+              }}
+            >
+              {fotoPerfilUrl ? (
+                <img 
+                  src={fotoPerfilUrl} 
+                  alt="Foto do perfil" 
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    borderRadius: '50%'
+                  }}
+                  onError={(e) => {
+                    // Se a imagem não carregar, mostra o emoji
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement!.innerHTML = '👤';
+                    e.currentTarget.parentElement!.style.backgroundColor = '#CED0FF';
+                  }}
+                />
+              ) : (
+                '👤'
+              )}
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
       <section style={{ backgroundColor: 'white', padding: '4rem 0' }}>
         <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '0 1rem', textAlign: 'center' }}>
           <h1 style={{ 
@@ -180,7 +303,6 @@ export default function HomeProfessor() {
             marginBottom: '1.5rem',
             lineHeight: '1.2'
           }}>
-            Bem-vindo(a), Professor(a)!<br />
             Gerencie suas turmas com o VARK
           </h1>
           
@@ -209,8 +331,7 @@ export default function HomeProfessor() {
                 fontWeight: '600', 
                 border: 'none',
                 cursor: 'pointer',
-                fontSize: '1rem',
-                transition: 'background-color 0.2s'
+                fontSize: '1rem'
               }}
             >
               Criar Nova Turma
@@ -226,8 +347,7 @@ export default function HomeProfessor() {
                 fontWeight: '600', 
                 border: '2px solid #150B53',
                 cursor: 'pointer',
-                fontSize: '1rem',
-                transition: 'background-color 0.2s'
+                fontSize: '1rem'
               }}
             >
               Ver Minhas Turmas
@@ -236,30 +356,27 @@ export default function HomeProfessor() {
         </div>
       </section>
 
-      {/* VARK Section */}
       <section style={{ backgroundColor: '#CED0FF', padding: '4rem 0' }}>
-        <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '0 1rem' }}>
-          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <h2 style={{ 
-              fontSize: '1.875rem', 
-              fontWeight: 'bold', 
-              color: '#111827', 
-              marginBottom: '1.5rem' 
-            }}>
-              VARK para Professores
-            </h2>
-            <p style={{ 
-              color: '#374151', 
-              maxWidth: '64rem', 
-              margin: '0 auto', 
-              lineHeight: '1.6'
-            }}>
-              Como professor, você pode utilizar o VARK para criar um ambiente 
-              de aprendizagem mais inclusivo e eficaz. Identifique os estilos de 
-              aprendizagem dos seus alunos e adapte suas metodologias para 
-              maximizar o potencial de cada estudante.
-            </p>
-          </div>
+        <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '0 1rem', textAlign: 'center' }}>
+          <h2 style={{ 
+            fontSize: '1.875rem', 
+            fontWeight: 'bold', 
+            color: '#111827', 
+            marginBottom: '1.5rem' 
+          }}>
+            VARK para Professores
+          </h2>
+          <p style={{ 
+            color: '#374151', 
+            maxWidth: '64rem', 
+            margin: '0 auto', 
+            lineHeight: '1.6'
+          }}>
+            Como professor, você pode utilizar o VARK para criar um ambiente 
+            de aprendizagem mais inclusivo e eficaz. Identifique os estilos de 
+            aprendizagem dos seus alunos e adapte suas metodologias para 
+            maximizar o potencial de cada estudante.
+          </p>
 
           <div style={{ 
             display: 'grid', 
@@ -320,7 +437,6 @@ export default function HomeProfessor() {
         </div>
       </section>
 
-      {/* Learning Systems Section */}
       <section style={{ backgroundColor: 'white', padding: '4rem 0' }}>
         <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '0 1rem' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
@@ -390,7 +506,7 @@ export default function HomeProfessor() {
                 gap: '2rem',
                 flexWrap: 'wrap'
               }}>
-                <div style={{ flex: '1', minWidth: '300px' }}>
+                <div style={{ flex: '1', minWidth: '300px', textAlign: 'left' }}>
                   <h3 style={{ 
                     fontSize: '1.5rem', 
                     fontWeight: 'bold', 
@@ -432,7 +548,6 @@ export default function HomeProfessor() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer style={{ backgroundColor: '#150B53', padding: '1rem 1rem' }}>
         <div style={{
           maxWidth: '72rem',
@@ -488,7 +603,6 @@ export default function HomeProfessor() {
         </div>
       </footer>
 
-      {/* Modal para criar turma */}
       {showModal && (
         <div style={{
           position: 'fixed',

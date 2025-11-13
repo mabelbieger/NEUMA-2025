@@ -10,6 +10,7 @@ interface UserData {
   email: string;
   nome_categoria: string;
   teste_realizado: boolean;
+  foto_perfil?: string;
 }
 
 export default function HomeAluno() {
@@ -35,6 +36,7 @@ export default function HomeAluno() {
       const data = await response.json();
 
       if (data.success) {
+        console.log('Dados do aluno:', data.aluno); // Debug
         setUserData(data.aluno);
       } else {
         console.error('Erro ao carregar dados do aluno:', data.message);
@@ -73,6 +75,19 @@ export default function HomeAluno() {
     return emojis[categoria.toLowerCase()] || '🎓';
   };
 
+  // Função para obter a URL completa da foto
+  const getFotoPerfilUrl = (fotoPath?: string) => {
+    if (!fotoPath) return null;
+    
+    // Se já for uma URL completa, retorna como está
+    if (fotoPath.startsWith('http')) {
+      return fotoPath;
+    }
+    
+    // Se for um caminho relativo, adiciona o base URL
+    return `http://localhost:3001${fotoPath.startsWith('/') ? '' : '/'}${fotoPath}`;
+  };
+
   if (loading) {
     return (
       <div style={{ 
@@ -98,81 +113,102 @@ export default function HomeAluno() {
     );
   }
 
+  const fotoPerfilUrl = getFotoPerfilUrl(userData?.foto_perfil);
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
-      <header style={{ backgroundColor: '#150B53', padding: '1rem 0' }}>
-        <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '0 1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-              <img 
-                src="/imagens/logo.png" 
-                alt="Logo" 
-                style={{ 
-                  width: '5rem', 
-                  height: '5rem',
-                  objectFit: 'contain'
-                }} 
-              />
-            </div>
+      <header style={{ backgroundColor: '#150B53', padding: '1rem 0', position: 'relative', height: '80px' }}>
+        <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
+          <img 
+            src="/imagens/logo.png" 
+            alt="Logo" 
+            style={{ 
+              width: '6rem', 
+              height: '6rem',
+              objectFit: 'contain'
+            }} 
+          />
+        </div>
+        
+        <div style={{ position: 'absolute', right: '2rem', top: '50%', transform: 'translateY(-50%)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {userData && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                padding: '0.5rem 1rem',
+                borderRadius: '2rem',
+                color: 'white',
+                fontSize: '0.875rem'
+              }}>
+                <span style={{ fontSize: '1.25rem' }}>
+                  {getCategoriaEmoji(userData.nome_categoria)}
+                </span>
+                <span>Sistema {userData.nome_categoria}</span>
+              </div>
+            )}
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              {userData && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '2rem',
-                  color: 'white',
-                  fontSize: '0.875rem'
-                }}>
-                  <span style={{ fontSize: '1.25rem' }}>
-                    {getCategoriaEmoji(userData.nome_categoria)}
-                  </span>
-                  <span>Sistema {userData.nome_categoria}</span>
-                </div>
-              )}
-              
-              <button
-                onClick={handleLogout}
-                style={{
-                  backgroundColor: 'transparent',
-                  border: '1px solid white',
-                  color: 'white',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '0.5rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  fontSize: '0.875rem'
-                }}
-              >
-                <LogOut size={16} />
-                Sair
-              </button>
+            <button
+              onClick={handleLogout}
+              style={{
+                backgroundColor: 'transparent',
+                border: '1px solid white',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '0.5rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontSize: '0.875rem'
+              }}
+            >
+              <LogOut size={16} />
+              Sair
+            </button>
 
-              <button
-                onClick={handlePerfil}
-                style={{
-                  width: '2.5rem',
-                  height: '2.5rem',
-                  borderRadius: '50%',
-                  backgroundColor: '#CED0FF',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#150B53',
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  cursor: 'pointer'
-                }}
-              >
-                👤
-              </button>
-            </div>
+            <button
+              onClick={handlePerfil}
+              style={{
+                width: '2.5rem',
+                height: '2.5rem',
+                borderRadius: '50%',
+                backgroundColor: fotoPerfilUrl ? 'transparent' : '#CED0FF',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#150B53',
+                fontSize: '1rem',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                overflow: 'hidden',
+                padding: 0
+              }}
+            >
+              {fotoPerfilUrl ? (
+                <img 
+                  src={fotoPerfilUrl} 
+                  alt="Foto do perfil" 
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    borderRadius: '50%'
+                  }}
+                  onError={(e) => {
+                    // Se a imagem não carregar, mostra o emoji
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement!.innerHTML = '👤';
+                    e.currentTarget.parentElement!.style.backgroundColor = '#CED0FF';
+                  }}
+                />
+              ) : (
+                '👤'
+              )}
+            </button>
           </div>
         </div>
       </header>

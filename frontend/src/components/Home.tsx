@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import BotaoPerfil from './BotaoPerfil';
+import { LogOut } from 'lucide-react';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -9,31 +9,74 @@ export default function Home() {
     navigate('/teste');
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('loggedUser');
+    navigate('/login');
+  };
+
+  const handlePerfil = () => {
+    navigate('/perfil-aluno');
+  };
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
-      <BotaoPerfil />
-      
-      {/* Header */}
-      <header style={{ backgroundColor: '#150B53', padding: '2rem 0' }}>
-        <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '0 1rem', textAlign: 'center' }}>
-          {/* Logo */}
-          <div style={{ marginBottom: '1.5rem' }}>
-            <img 
-              src="/imagens/logo.png" 
-              alt="Logo" 
-              style={{ 
-                width: '10rem', 
-                height: '10rem', 
-                margin: '0 auto', 
-                display: 'block',
-                objectFit: 'contain'
-              }} 
-            />
+      <header style={{ backgroundColor: '#150B53', padding: '1rem 0', position: 'relative', height: '80px' }}>
+        <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
+          <img 
+            src="/imagens/logo.png" 
+            alt="Logo" 
+            style={{ 
+              width: '6rem', 
+              height: '6rem',
+              objectFit: 'contain'
+            }} 
+          />
+        </div>
+        
+        <div style={{ position: 'absolute', right: '2rem', top: '50%', transform: 'translateY(-50%)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button
+              onClick={handleLogout}
+              style={{
+                backgroundColor: 'transparent',
+                border: '1px solid white',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                borderRadius: '0.5rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontSize: '0.875rem'
+              }}
+            >
+              <LogOut size={16} />
+              Sair
+            </button>
+
+            <button
+              onClick={handlePerfil}
+              style={{
+                width: '2.5rem',
+                height: '2.5rem',
+                borderRadius: '50%',
+                backgroundColor: '#CED0FF',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#150B53',
+                fontSize: '1rem',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              👤
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
       <section style={{ backgroundColor: 'white', padding: '4rem 0' }}>
         <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '0 1rem', textAlign: 'center' }}>
           <h1 style={{ 
@@ -71,42 +114,37 @@ export default function Home() {
               fontWeight: '600', 
               border: 'none',
               cursor: 'pointer',
-              fontSize: '1rem',
-              transition: 'background-color 0.2s'
+              fontSize: '1rem'
             }}
-            
           >
             Realizar o Teste VARK
           </button>
         </div>
       </section>
 
-      {/* VARK Section */}
       <section style={{ backgroundColor: '#CED0FF', padding: '4rem 0' }}>
-        <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '0 1rem' }}>
-          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <h2 style={{ 
-              fontSize: '1.875rem', 
-              fontWeight: 'bold', 
-              color: '#111827', 
-              marginBottom: '1.5rem' 
-            }}>
-              VARK
-            </h2>
-            <p style={{ 
-              color: '#374151', 
-              maxWidth: '64rem', 
-              margin: '0 auto', 
-              lineHeight: '1.6'
-            }}>
-              O VARK é uma abordagem que identifica quatro estilos de 
-              aprendizagem — <strong>Visual, Auditivo, Leitura/Escrita e Cinestésico</strong> — 
-              para entender como cada pessoa prefere receber informações. O 
-              objetivo é melhorar a comunicação no ensino e promover um 
-              aprendizado mais eficaz, de acordo com os métodos de acordo com os 
-              estilos de aprendizagem.
-            </p>
-          </div>
+        <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '0 1rem', textAlign: 'center' }}>
+          <h2 style={{ 
+            fontSize: '1.875rem', 
+            fontWeight: 'bold', 
+            color: '#111827', 
+            marginBottom: '1.5rem' 
+          }}>
+            VARK
+          </h2>
+          <p style={{ 
+            color: '#374151', 
+            maxWidth: '64rem', 
+            margin: '0 auto', 
+            lineHeight: '1.6'
+          }}>
+            O VARK é uma abordagem que identifica quatro estilos de 
+            aprendizagem — <strong>Visual, Auditivo, Leitura/Escrita e Cinestésico</strong> — 
+            para entender como cada pessoa prefere receber informações. O 
+            objetivo é melhorar a comunicação no ensino e promover um 
+            aprendizado mais eficaz, de acordo com os métodos de acordo com os 
+            estilos de aprendizagem.
+          </p>
 
           <div style={{ 
             display: 'grid', 
@@ -167,7 +205,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Learning Systems Section */}
       <section style={{ backgroundColor: 'white', padding: '4rem 0' }}>
         <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '0 1rem' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
@@ -237,7 +274,7 @@ export default function Home() {
                 gap: '2rem',
                 flexWrap: 'wrap'
               }}>
-                <div style={{ flex: '1', minWidth: '300px' }}>
+                <div style={{ flex: '1', minWidth: '300px', textAlign: 'left' }}>
                   <h3 style={{ 
                     fontSize: '1.5rem', 
                     fontWeight: 'bold', 
@@ -279,7 +316,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer style={{ backgroundColor: '#CED0FF', padding: '1rem 1rem' }}>
+      <footer style={{ backgroundColor: '#150B53', padding: '1rem 1rem' }}>
         <div style={{
           maxWidth: '72rem',
           margin: '0 auto',
@@ -293,12 +330,12 @@ export default function Home() {
             <h3 style={{
               fontSize: '1.25rem',
               fontWeight: 'bold',
-              color: '#111827',
+              color: '#ffffffff',
               marginBottom: '1rem'
             }}>
               Contato
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#374151', lineHeight: '1.5' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#b6b9ffff', lineHeight: '1.5' }}>
               <p><strong>Instagram:</strong><br />@projeto_neuma</p>
               <p><strong>E-mail:</strong><br />projetoneuma@gmail.com</p>
             </div>
@@ -308,12 +345,12 @@ export default function Home() {
             <h3 style={{
               fontSize: '1.25rem',
               fontWeight: 'bold',
-              color: '#111827',
+              color: '#ffffffff',
               marginBottom: '1rem'
             }}>
               Desenvolvedoras
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#374151', lineHeight: '1.5' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#b6b9ffff', lineHeight: '1.5' }}>
               <p>Mariana Machado Welter <br /> Marina Isabel Bieger</p>
             </div>
           </div>

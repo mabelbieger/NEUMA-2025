@@ -10,6 +10,74 @@ export default function Login() {
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
   const [recoveryEmail, setRecoveryEmail] = useState('');
   const [isRecoveryLoading, setIsRecoveryLoading] = useState(false);
+  const [recoveryStep, setRecoveryStep] = useState(1);
+  const [recoveryToken, setRecoveryToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [userId, setUserId] = useState<number | null>(null);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+
+  const enviarEmailToken = async (email: string, nome: string, token: string): Promise<boolean> => {
+    try {
+      const emailData = {
+        service_id: 'service_hxppnxb',
+        template_id: 'template_r3n6x8s', 
+        user_id: 'xf9Ljhxu447oam886',
+        accessToken: 'a6c8d8f4b2e1c9a3e7f5d2b8c4a9e6f3',
+        template_params: {
+          to_email: email,
+          to_name: nome,
+          token: token,
+          reply_to: email,
+          subject: 'Token de Recuperação de Senha - Neuma'
+        }
+      };
+
+      const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData)
+      });
+
+      if (response.ok) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 4000);
+  };
+
+  const redirectUser = async (user: any) => {
+    const tipoUsuario = user.tipo_usuario || user.tipo || '';
+    
+    if (tipoUsuario === 'Professor') {
+      window.location.href = '/home-professor';
+    } else {
+      try {
+        const alunoResponse = await fetch(`http://localhost:3001/api/aluno/${user.id}`);
+        const alunoData = await alunoResponse.json();
+        
+        if (alunoData.success && alunoData.aluno && alunoData.aluno.teste_realizado) {
+          window.location.href = '/home-aluno';
+        } else {
+          window.location.href = '/home';
+        }
+      } catch (error) {
+        window.location.href = '/home';
+      }
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -24,10 +92,6 @@ export default function Login() {
     setIsLoading(true);
    
     try {
-      console.log('=== DEBUG LOGIN ===');
-      console.log('Email:', formData.email);
-      console.log('Senha:', formData.senha);
-     
       const response = await fetch('http://localhost:3001/api/login', {
         method: 'POST',
         headers: {
@@ -36,36 +100,20 @@ export default function Login() {
         body: JSON.stringify(formData)
       });
      
-      console.log('Status da resposta:', response.status);
       const result = await response.json();
-      console.log('Resposta completa do servidor:', result);
      
       if (result.success) {
         if (result.user) {
           localStorage.setItem('loggedUser', JSON.stringify(result.user));
-          console.log('Usuário salvo no localStorage:', result.user);
         }
        
-        alert('Login realizado com sucesso!');
-        
-        // Redirecionar baseado no tipo de usuário
-        const tipoUsuario = result.user?.tipo_usuario || result.user?.tipo || '';
-        console.log('Tipo de usuário detectado:', tipoUsuario);
-        
-        if (tipoUsuario === 'Professor') {
-          console.log('Redirecionando para /home-professor');
-          window.location.href = '/home-professor';
-        } else {
-          console.log('Redirecionando para /home');
-          window.location.href = '/home';
-        }
+        showNotification('Login realizado com sucesso!', 'success');
+        await redirectUser(result.user);
       } else {
-        console.error('Erro de login:', result.message);
-        alert(`Erro: ${result.message}`);
+        showNotification(`Erro: ${result.message}`, 'error');
       }
     } catch (error) {
-      console.error('Erro ao fazer login:', error);
-      alert('Erro ao conectar com o servidor');
+      showNotification('Erro ao conectar com o servidor', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -73,36 +121,395 @@ export default function Login() {
 
   const handlePasswordRecovery = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsRecoveryLoading(true);
-   
-    try {
-      const response = await fetch('http://localhost:3001/api/recuperar-senha', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: recoveryEmail })
-      });
-     
-      const result = await response.json();
-     
-      if (result.success) {
-        alert('Email de recuperação enviado com sucesso! Verifique sua caixa de entrada.');
-        setShowRecoveryModal(false);
-        setRecoveryEmail('');
-      } else {
-        alert(`Erro: ${result.message}`);
+    
+    if (recoveryStep === 1) {
+      const emailToUse = formData.email;
+      
+      if (!emailToUse) {
+        showNotification('Por favor, digite seu email no campo de login primeiro', 'error');
+        return;
       }
-    } catch (error) {
-      console.error('Erro ao recuperar senha:', error);
-      alert('Erro ao conectar com o servidor');
-    } finally {
-      setIsRecoveryLoading(false);
+
+      setIsRecoveryLoading(true);
+      
+      try {
+        const response = await fetch('http://localhost:3001/api/solicitar-troca-senha', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email: emailToUse })
+        });
+       
+        const result = await response.json();
+       
+        if (result.success) {
+          const emailEnviado = await enviarEmailToken(
+            result.email, 
+            result.nome, 
+            result.token
+          );
+          
+          if (emailEnviado) {
+            showNotification('Token enviado para seu email! Verifique sua caixa de entrada.', 'success');
+            setRecoveryEmail(result.email);
+            setRecoveryStep(2);
+          } else {
+            showNotification('Erro ao enviar email. O serviço de email pode estar temporariamente indisponível.', 'error');
+          }
+        } else {
+          showNotification(`Erro: ${result.message}`, 'error');
+        }
+      } catch (error) {
+        showNotification('Erro ao conectar com o servidor', 'error');
+      } finally {
+        setIsRecoveryLoading(false);
+      }
+    } else if (recoveryStep === 2) {
+      if (!recoveryToken) {
+        showNotification('Por favor, digite o token', 'error');
+        return;
+      }
+
+      setIsRecoveryLoading(true);
+      
+      try {
+        const response = await fetch('http://localhost:3001/api/verificar-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            email: recoveryEmail, 
+            token: recoveryToken 
+          })
+        });
+       
+        const result = await response.json();
+       
+        if (result.success) {
+          showNotification('Token verificado com sucesso!', 'success');
+          setUserId(result.id_usuario);
+          setRecoveryStep(3);
+        } else {
+          showNotification(`Erro: ${result.message}`, 'error');
+        }
+      } catch (error) {
+        showNotification('Erro ao conectar com o servidor', 'error');
+      } finally {
+        setIsRecoveryLoading(false);
+      }
+    } else if (recoveryStep === 3) {
+      if (!newPassword || !confirmPassword) {
+        showNotification('Por favor, preencha ambos os campos de senha', 'error');
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        showNotification('As senhas não coincidem!', 'error');
+        return;
+      }
+      
+      if (newPassword.length < 6) {
+        showNotification('A senha deve ter pelo menos 6 caracteres', 'error');
+        return;
+      }
+      
+      setIsRecoveryLoading(true);
+      
+      try {
+        const response = await fetch('http://localhost:3001/api/trocar-senha', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            id_usuario: userId,
+            nova_senha: newPassword
+          })
+        });
+       
+        const result = await response.json();
+       
+        if (result.success) {
+          showNotification('Senha alterada com sucesso!', 'success');
+          resetRecoveryProcess();
+        } else {
+          showNotification(`Erro: ${result.message}`, 'error');
+        }
+      } catch (error) {
+        showNotification('Erro ao conectar com o servidor', 'error');
+      } finally {
+        setIsRecoveryLoading(false);
+      }
     }
+  };
+
+  const resetRecoveryProcess = () => {
+    setShowRecoveryModal(false);
+    setRecoveryStep(1);
+    setRecoveryEmail('');
+    setRecoveryToken('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setUserId(null);
+    setIsRecoveryLoading(false);
   };
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
+  };
+
+  const toggleNewPasswordVisibility = () => {
+    setShowNewPassword(!showNewPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
+  const renderRecoveryStep = () => {
+    switch (recoveryStep) {
+      case 1:
+        return (
+          <>
+            <h3 style={{
+              marginBottom: '20px',
+              color: '#1B1464',
+              textAlign: 'center'
+            }}>
+              Recuperar Senha
+            </h3>
+            <p style={{ marginBottom: '20px', textAlign: 'center', color: '#666', fontSize: '14px' }}>
+              Enviaremos um token para: <br />
+              <strong>{formData.email}</strong>
+            </p>
+            <p style={{ marginBottom: '20px', textAlign: 'center', color: '#999', fontSize: '12px' }}>
+              O token expira em 2 minutos
+            </p>
+            
+            <div style={{
+              backgroundColor: '#f0f8ff',
+              padding: '15px',
+              borderRadius: '8px',
+              marginBottom: '20px',
+              border: '1px solid #c8e6ff'
+            }}>
+              <p style={{ margin: 0, textAlign: 'center', color: '#1B1464', fontSize: '13px' }}>
+                Verifique sua caixa de entrada e pasta de spam
+              </p>
+            </div>
+          </>
+        );
+      
+      case 2:
+        return (
+          <>
+            <h3 style={{
+              marginBottom: '20px',
+              color: '#1B1464',
+              textAlign: 'center'
+            }}>
+              Verificar Token
+            </h3>
+            <p style={{ marginBottom: '20px', textAlign: 'center', color: '#666', fontSize: '14px' }}>
+              Digite o token de 6 dígitos enviado para: <br />
+              <strong>{recoveryEmail}</strong>
+            </p>
+            <input
+              type="text"
+              placeholder="Digite o token"
+              value={recoveryToken}
+              onChange={(e) => setRecoveryToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              required
+              maxLength={6}
+              style={{
+                padding: '12px 16px',
+                border: '2px solid #CED0FF',
+                borderRadius: '8px',
+                fontSize: '16px',
+                width: '100%',
+                boxSizing: 'border-box',
+                marginBottom: '20px',
+                color: '#000',
+                textAlign: 'center',
+                letterSpacing: '8px',
+                fontSize: '18px',
+                fontWeight: 'bold'
+              }}
+            />
+          </>
+        );
+      
+      case 3:
+        return (
+          <>
+            <h3 style={{
+              marginBottom: '20px',
+              color: '#1B1464',
+              textAlign: 'center'
+            }}>
+              Nova Senha
+            </h3>
+            <p style={{ marginBottom: '20px', textAlign: 'center', color: '#666', fontSize: '14px' }}>
+              Digite sua nova senha
+            </p>
+            
+            <div style={{ position: 'relative', marginBottom: '15px' }}>
+              <input
+                type={showNewPassword ? "text" : "password"}
+                placeholder="Nova senha (mínimo 6 caracteres)"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                style={{
+                  padding: '12px 45px 12px 16px',
+                  border: '2px solid #CED0FF',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  color: '#000'
+                }}
+              />
+              <button
+                type="button"
+                onClick={toggleNewPasswordVisibility}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#666',
+                  fontSize: '18px',
+                  padding: '4px',
+                  width: '30px',
+                  height: '30px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {showNewPassword ? '👁️' : '👁️‍🗨️'}
+              </button>
+            </div>
+
+            <div style={{ position: 'relative', marginBottom: '20px' }}>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirmar nova senha"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                style={{
+                  padding: '12px 45px 12px 16px',
+                  border: '2px solid #CED0FF',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  color: '#000'
+                }}
+              />
+              <button
+                type="button"
+                onClick={toggleConfirmPasswordVisibility}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#666',
+                  fontSize: '18px',
+                  padding: '4px',
+                  width: '30px',
+                  height: '30px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
+              </button>
+            </div>
+          </>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  const renderRecoveryButtons = () => {
+    return (
+      <div style={{
+        display: 'flex',
+        gap: '10px',
+        justifyContent: 'flex-end'
+      }}>
+        {recoveryStep > 1 && (
+          <button
+            type="button"
+            onClick={() => setRecoveryStep(recoveryStep - 1)}
+            style={{
+              padding: '10px 20px',
+              border: '2px solid #CED0FF',
+              borderRadius: '8px',
+              backgroundColor: 'transparent',
+              color: '#1B1464',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500'
+            }}
+          >
+            Voltar
+          </button>
+        )}
+        
+        <button
+          type="button"
+          onClick={resetRecoveryProcess}
+          style={{
+            padding: '10px 20px',
+            border: '2px solid #CED0FF',
+            borderRadius: '8px',
+            backgroundColor: 'transparent',
+            color: '#1B1464',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '500'
+          }}
+        >
+          Cancelar
+        </button>
+        
+        <button
+          type="submit"
+          disabled={isRecoveryLoading}
+          style={{
+            padding: '10px 20px',
+            border: 'none',
+            borderRadius: '8px',
+            backgroundColor: '#CED0FF',
+            color: '#1B1464',
+            cursor: isRecoveryLoading ? 'not-allowed' : 'pointer',
+            fontSize: '14px',
+            fontWeight: '600',
+            opacity: isRecoveryLoading ? 0.6 : 1
+          }}
+        >
+          {isRecoveryLoading ? 'Processando...' : 
+           recoveryStep === 1 ? 'Enviar Token' :
+           recoveryStep === 2 ? 'Verificar Token' : 'Trocar Senha'}
+        </button>
+      </div>
+    );
   };
 
   return (
@@ -115,6 +522,28 @@ export default function Login() {
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       padding: '20px'
     }}>
+
+      {notification && (
+        <div style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          backgroundColor: notification.type === 'success' ? '#4CAF50' : '#f44336',
+          color: 'white',
+          padding: '20px 30px',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          zIndex: 2000,
+          textAlign: 'center',
+          maxWidth: '90%',
+          fontSize: '16px',
+          fontWeight: '500'
+        }}>
+          {notification.message}
+        </div>
+      )}
+
       <div style={{
         backgroundColor: '#F9F9F9',
         width: '100%',
@@ -221,7 +650,7 @@ export default function Login() {
                   transition: 'border-color 0.2s',
                   width: '100%',
                   boxSizing: 'border-box',
-                  color: '#000' // Adicionado para garantir que o texto seja visível
+                  color: '#000'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#9B7EFF'}
                 onBlur={(e) => e.target.style.borderColor = '#CED0FF'}
@@ -246,7 +675,7 @@ export default function Login() {
                   transition: 'border-color 0.2s',
                   width: '100%',
                   boxSizing: 'border-box',
-                  color: '#000' // Adicionado para garantir que o texto seja visível
+                  color: '#000'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#9B7EFF'}
                 onBlur={(e) => e.target.style.borderColor = '#CED0FF'}
@@ -281,7 +710,12 @@ export default function Login() {
               marginTop: '-10px'
             }}>
               <span
-                onClick={() => setShowRecoveryModal(true)}
+                onClick={() => {
+                  if (formData.email) {
+                    setRecoveryEmail(formData.email);
+                  }
+                  setShowRecoveryModal(true);
+                }}
                 style={{
                   color: '#1B1464',
                   textDecoration: 'none',
@@ -340,7 +774,6 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Modal de Recuperação de Senha */}
       {showRecoveryModal && (
         <div style={{
           position: 'fixed',
@@ -362,72 +795,9 @@ export default function Login() {
             maxWidth: '400px',
             boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
           }}>
-            <h3 style={{
-              marginBottom: '20px',
-              color: '#1B1464',
-              textAlign: 'center'
-            }}>
-              Recuperar Senha
-            </h3>
             <form onSubmit={handlePasswordRecovery}>
-              <input
-                type="email"
-                placeholder="Digite seu e-mail"
-                value={recoveryEmail}
-                onChange={(e) => setRecoveryEmail(e.target.value)}
-                required
-                style={{
-                  padding: '12px 16px',
-                  border: '2px solid #CED0FF',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  marginBottom: '20px',
-                  color: '#000'
-                }}
-              />
-              <div style={{
-                display: 'flex',
-                gap: '10px',
-                justifyContent: 'flex-end'
-              }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowRecoveryModal(false);
-                    setRecoveryEmail('');
-                  }}
-                  style={{
-                    padding: '10px 20px',
-                    border: '2px solid #CED0FF',
-                    borderRadius: '8px',
-                    backgroundColor: 'transparent',
-                    color: '#1B1464',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500'
-                  }}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={isRecoveryLoading}
-                  style={{
-                    padding: '10px 20px',
-                    border: 'none',
-                    borderRadius: '8px',
-                    backgroundColor: '#CED0FF',
-                    color: '#1B1464',
-                    cursor: isRecoveryLoading ? 'not-allowed' : 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '600'
-                  }}
-                >
-                  {isRecoveryLoading ? 'Enviando...' : 'Enviar'}
-                </button>
-              </div>
+              {renderRecoveryStep()}
+              {renderRecoveryButtons()}
             </form>
           </div>
         </div>
@@ -435,13 +805,11 @@ export default function Login() {
 
       <style>
         {`
-          /* Garantir que os placeholders sejam visíveis */
           input::placeholder {
             color: #666 !important;
             opacity: 1 !important;
           }
           
-          /* Garantir que o texto digitado seja visível */
           input {
             color: #000 !important;
           }
